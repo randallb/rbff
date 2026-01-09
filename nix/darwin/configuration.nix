@@ -26,5 +26,14 @@
 
   environment.etc."rbff/active".text = "rbff\n";
 
+  programs.zsh = {
+    enable = true;
+    loginShellInit = ''
+      if [ -f /etc/profiles/per-user/${config.system.primaryUser}/etc/profile.d/hm-session-vars.sh ]; then
+        source /etc/profiles/per-user/${config.system.primaryUser}/etc/profile.d/hm-session-vars.sh
+      fi
+    '';
+  };
+
   system.stateVersion = 4;
 }

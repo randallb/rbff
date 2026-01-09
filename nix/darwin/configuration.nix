@@ -59,7 +59,7 @@
       "Motion" = 434290957;
       "OpenIn" = 6520390762;
       "Pixelmator Pro" = 1289583905;
-      "Remote Desktop" = 1295203466;
+      # "Remote Desktop" = 1295203466;
       "Screens 5" = 1663047912;
       "WhatsApp" = 310633997;
       "Xcode" = 497799835;

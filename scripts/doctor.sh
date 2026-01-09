@@ -10,6 +10,23 @@ ensure_local_bin() {
   export PATH="$HOME/.local/bin:$PATH"
 }
 
+brew_path() {
+  local brew_bin
+  if brew_bin="$(command -v brew 2>/dev/null)"; then
+    echo "$brew_bin"
+    return 0
+  fi
+  if [[ -x /opt/homebrew/bin/brew ]]; then
+    echo "/opt/homebrew/bin/brew"
+    return 0
+  fi
+  if [[ -x /usr/local/bin/brew ]]; then
+    echo "/usr/local/bin/brew"
+    return 0
+  fi
+  return 1
+}
+
 ensure_nix() {
   if ! command -v nix >/dev/null 2>&1; then
     curl -sSfL https://install.determinate.systems/nix | sh -s -- install
@@ -17,7 +34,7 @@ ensure_nix() {
 }
 
 ensure_brew() {
-  if ! command -v brew >/dev/null 2>&1; then
+  if ! brew_path >/dev/null 2>&1; then
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   fi
 }

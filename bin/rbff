@@ -12,6 +12,23 @@ ensure_local_bin() {
   export PATH="$HOME/.local/bin:$PATH"
 }
 
+brew_path() {
+  local brew_bin
+  if brew_bin="$(command -v brew 2>/dev/null)"; then
+    echo "$brew_bin"
+    return 0
+  fi
+  if [[ -x /opt/homebrew/bin/brew ]]; then
+    echo "/opt/homebrew/bin/brew"
+    return 0
+  fi
+  if [[ -x /usr/local/bin/brew ]]; then
+    echo "/usr/local/bin/brew"
+    return 0
+  fi
+  return 1
+}
+
 find_rbpara_root() {
   if [[ -n "$RBFF_MIGRATE_FROM" ]] && [[ -d "$RBFF_MIGRATE_FROM" ]]; then
     echo "$RBFF_MIGRATE_FROM"
@@ -50,7 +67,7 @@ status_check_prereqs() {
   if ! command -v nix >/dev/null 2>&1; then
     ok=1
   fi
-  if ! command -v brew >/dev/null 2>&1; then
+  if ! brew_path >/dev/null 2>&1; then
     ok=1
   fi
   if [[ ! -d "$RBFF_REPO_DEFAULT" ]]; then
@@ -115,17 +132,21 @@ ensure_nix() {
 }
 
 ensure_brew() {
-  if ! command -v brew >/dev/null 2>&1; then
+  if ! brew_path >/dev/null 2>&1; then
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   fi
 }
 
 run_darwin_switch() {
   local flake_ref="${RBFF_REPO_DEFAULT}#rbff"
+  local sudo_cmd=""
+  if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
+    sudo_cmd="sudo"
+  fi
   if command -v darwin-rebuild >/dev/null 2>&1; then
-    darwin-rebuild switch --flake "$flake_ref" --impure
+    $sudo_cmd darwin-rebuild switch --flake "$flake_ref" --impure
   else
-    nix --extra-experimental-features "nix-command flakes" \
+    $sudo_cmd nix --extra-experimental-features "nix-command flakes" \
       run github:LnL7/nix-darwin -- switch --flake "$flake_ref" --impure
   fi
 }
@@ -149,8 +170,8 @@ case "$cmd" in
       else
         echo "- nix: missing (would install)"
       fi
-      if command -v brew >/dev/null 2>&1; then
-        echo "- brew: present"
+      if brew_bin="$(brew_path)"; then
+        echo "- brew: present at $brew_bin"
       else
         echo "- brew: missing (would install)"
       fi
@@ -199,8 +220,8 @@ case "$cmd" in
       else
         echo "- nix: missing (would fail without doctor)"
       fi
-      if command -v brew >/dev/null 2>&1; then
-        echo "- brew: present"
+      if brew_bin="$(brew_path)"; then
+        echo "- brew: present at $brew_bin"
       else
         echo "- brew: missing (would fail without doctor)"
       fi
@@ -231,8 +252,8 @@ case "$cmd" in
     else
       echo "- nix: missing"
     fi
-    if command -v brew >/dev/null 2>&1; then
-      echo "- brew: present"
+    if brew_bin="$(brew_path)"; then
+      echo "- brew: present at $brew_bin"
     else
       echo "- brew: missing"
     fi

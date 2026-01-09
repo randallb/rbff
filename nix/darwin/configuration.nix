@@ -19,6 +19,7 @@
   };
 
   system.primaryUser = builtins.getEnv "USER";
+  users.users.root.home = "/var/root";
 
   environment.systemPackages = with pkgs; [
     sapling

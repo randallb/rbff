@@ -30,3 +30,9 @@ rbff status         # show local setup status
 
 If nix-darwin is already active (origin unknown), `rbff doctor` will prompt to
 create a migration snapshot before applying the new configuration.
+
+The snapshot writes to `~/.rbff/migrations/<timestamp>/` and captures:
+- `source-path.txt` (detected previous repo path)
+- `darwin-generations.txt` (if available)
+- `brew-casks.txt` (if available)
+- `notes.txt`

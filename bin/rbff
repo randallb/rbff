@@ -80,6 +80,7 @@ maybe_migrate() {
 
   if rbpara_root="$(find_rbpara_root)"; then
     echo "rbff: detected rbpara at $rbpara_root"
+    echo "Snapshot captures: source path, darwin generations, brew casks."
     read -r -p "Run migration snapshot? [y/N] " reply
     if [[ "$reply" =~ ^[Yy]$ ]]; then
       "$RBFF_REPO_DEFAULT/scripts/migrate.sh" "$rbpara_root"

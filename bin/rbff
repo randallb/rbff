@@ -1,0 +1,281 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+RBFF_REPO_DEFAULT="${RBFF_REPO_DEFAULT:-$HOME/code/rbff}"
+RBFF_BIN_TARGET="${RBFF_BIN_TARGET:-$HOME/.local/bin/rbff}"
+RBFF_REMOTE_DEFAULT="${RBFF_REMOTE_DEFAULT:-https://github.com/randallb/rbff.git}"
+RBFF_MIGRATE_FROM="${RBFF_MIGRATE_FROM:-}"
+RBFF_MARKER_PATH="${RBFF_MARKER_PATH:-/etc/rbff/active}"
+
+ensure_local_bin() {
+  mkdir -p "$HOME/.local/bin"
+  if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+    local shell_rc="$HOME/.zshrc"
+    if [[ -f "$shell_rc" ]] && ! grep -q "rbff.*local/bin" "$shell_rc"; then
+      {
+        echo ""
+        echo "# rbff"
+        echo "export PATH=\"$HOME/.local/bin:$PATH\""
+      } >> "$shell_rc"
+    fi
+    export PATH="$HOME/.local/bin:$PATH"
+  fi
+}
+
+find_rbpara_root() {
+  if [[ -n "$RBFF_MIGRATE_FROM" ]] && [[ -d "$RBFF_MIGRATE_FROM" ]]; then
+    echo "$RBFF_MIGRATE_FROM"
+    return 0
+  fi
+
+  local candidates=(
+    "$HOME/code/rbpara"
+    "$HOME/Documents/rbpara"
+    "$HOME/Library/Mobile Documents/com~apple~CloudDocs/rbpara"
+  )
+  local candidate
+  for candidate in "${candidates[@]}"; do
+    if [[ -d "$candidate" ]]; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+detect_nix_darwin() {
+  if [[ -L /run/current-system ]] || [[ -d /run/current-system ]]; then
+    if [[ -f "$RBFF_MARKER_PATH" ]]; then
+      echo "active:rbff"
+    else
+      echo "active:unknown"
+    fi
+  else
+    echo "inactive"
+  fi
+}
+
+status_check_prereqs() {
+  local ok=0
+  if ! command -v nix >/dev/null 2>&1; then
+    ok=1
+  fi
+  if ! command -v brew >/dev/null 2>&1; then
+    ok=1
+  fi
+  if [[ ! -d "$RBFF_REPO_DEFAULT" ]]; then
+    ok=1
+  fi
+  echo "$ok"
+}
+
+status_check_full() {
+  local ok
+  ok="$(status_check_prereqs)"
+  if [[ ! -f "$RBFF_BIN_TARGET" ]]; then
+    ok=1
+  fi
+  echo "$ok"
+}
+
+maybe_migrate() {
+  local rbpara_root
+  if [[ "$(detect_nix_darwin)" != "active:unknown" ]]; then
+    return 0
+  fi
+
+  if [[ ! -t 0 ]]; then
+    return 0
+  fi
+
+  if rbpara_root="$(find_rbpara_root)"; then
+    echo "rbff: detected rbpara at $rbpara_root"
+    read -r -p "Run migration snapshot? [y/N] " reply
+    if [[ "$reply" =~ ^[Yy]$ ]]; then
+      "$RBFF_REPO_DEFAULT/scripts/migrate.sh" "$rbpara_root"
+    fi
+  fi
+}
+
+ensure_repo() {
+  if [[ ! -d "$RBFF_REPO_DEFAULT" ]]; then
+    mkdir -p "$(dirname "$RBFF_REPO_DEFAULT")"
+    if command -v sl >/dev/null 2>&1; then
+      sl clone "$RBFF_REMOTE_DEFAULT" "$RBFF_REPO_DEFAULT"
+    else
+      nix --extra-experimental-features "nix-command flakes" \
+        shell nixpkgs#sapling -c sl clone "$RBFF_REMOTE_DEFAULT" "$RBFF_REPO_DEFAULT"
+    fi
+  fi
+}
+
+install_rbff_cli() {
+  ensure_local_bin
+  if [[ -f "$RBFF_REPO_DEFAULT/bin/rbff" ]]; then
+    cp "$RBFF_REPO_DEFAULT/bin/rbff" "$RBFF_BIN_TARGET"
+    chmod +x "$RBFF_BIN_TARGET"
+  fi
+}
+
+ensure_nix() {
+  if ! command -v nix >/dev/null 2>&1; then
+    curl -sSfL https://install.determinate.systems/nix | sh -s -- install
+  fi
+}
+
+ensure_brew() {
+  if ! command -v brew >/dev/null 2>&1; then
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  fi
+}
+
+run_darwin_switch() {
+  local flake_ref="${RBFF_REPO_DEFAULT}#rbff"
+  if command -v darwin-rebuild >/dev/null 2>&1; then
+    darwin-rebuild switch --flake "$flake_ref" --impure
+  else
+    nix --extra-experimental-features "nix-command flakes" \
+      run github:LnL7/nix-darwin -- switch --flake "$flake_ref" --impure
+  fi
+}
+
+cmd="${1:-}"
+shift || true
+dry_run="false"
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run)
+      dry_run="true"
+      ;;
+  esac
+done
+case "$cmd" in
+  doctor)
+    if [[ "$dry_run" == "true" ]]; then
+      echo "rbff doctor (dry-run):"
+      if command -v nix >/dev/null 2>&1; then
+        echo "- nix: present"
+      else
+        echo "- nix: missing (would install)"
+      fi
+      if command -v brew >/dev/null 2>&1; then
+        echo "- brew: present"
+      else
+        echo "- brew: missing (would install)"
+      fi
+      if [[ -d "$RBFF_REPO_DEFAULT" ]]; then
+        echo "- repo: present at $RBFF_REPO_DEFAULT"
+      else
+        echo "- repo: missing (would clone to $RBFF_REPO_DEFAULT)"
+      fi
+      if [[ -f "$RBFF_BIN_TARGET" ]]; then
+        echo "- rbff: present at $RBFF_BIN_TARGET"
+      else
+        echo "- rbff: missing (would install to $RBFF_BIN_TARGET)"
+      fi
+      case "$(detect_nix_darwin)" in
+        active:rbff)
+          echo "- nix-darwin: active (rbff marker present)"
+          ;;
+        active:unknown)
+          echo "- nix-darwin: active (origin unknown)"
+          echo "- migration: would prompt for snapshot"
+          ;;
+        inactive)
+          echo "- nix-darwin: not detected"
+          ;;
+      esac
+      echo "- would run: darwin-rebuild switch --flake $RBFF_REPO_DEFAULT#rbff --impure"
+      exit 0
+    fi
+    ensure_nix
+    ensure_brew
+    ensure_repo
+    install_rbff_cli
+    maybe_migrate
+    run_darwin_switch
+    ;;
+  rebuild)
+    if [[ "$dry_run" == "true" ]]; then
+      echo "rbff rebuild (dry-run):"
+      if [[ -d "$RBFF_REPO_DEFAULT" ]]; then
+        echo "- repo: present at $RBFF_REPO_DEFAULT"
+      else
+        echo "- repo: missing (would fail without doctor)"
+      fi
+      if command -v nix >/dev/null 2>&1; then
+        echo "- nix: present"
+      else
+        echo "- nix: missing (would fail without doctor)"
+      fi
+      if command -v brew >/dev/null 2>&1; then
+        echo "- brew: present"
+      else
+        echo "- brew: missing (would fail without doctor)"
+      fi
+      case "$(detect_nix_darwin)" in
+        active:rbff)
+          echo "- nix-darwin: active (rbff marker present)"
+          ;;
+        active:unknown)
+          echo "- nix-darwin: active (origin unknown)"
+          ;;
+        inactive)
+          echo "- nix-darwin: not detected"
+          ;;
+      esac
+      echo "- would run: darwin-rebuild switch --flake $RBFF_REPO_DEFAULT#rbff --impure"
+      exit 0
+    fi
+    if [[ "$(status_check_prereqs)" != "0" ]]; then
+      echo "rbff: missing prerequisites; run rbff status or rbff doctor" >&2
+      exit 1
+    fi
+    run_darwin_switch
+    ;;
+  status)
+    echo "rbff status:"
+    if command -v nix >/dev/null 2>&1; then
+      echo "- nix: present"
+    else
+      echo "- nix: missing"
+    fi
+    if command -v brew >/dev/null 2>&1; then
+      echo "- brew: present"
+    else
+      echo "- brew: missing"
+    fi
+    if [[ -d "$RBFF_REPO_DEFAULT" ]]; then
+      echo "- repo: present at $RBFF_REPO_DEFAULT"
+    else
+      echo "- repo: missing"
+    fi
+    if [[ -f "$RBFF_BIN_TARGET" ]]; then
+      echo "- rbff: present at $RBFF_BIN_TARGET"
+    else
+      echo "- rbff: missing"
+    fi
+    case "$(detect_nix_darwin)" in
+      active:rbff)
+        echo "- nix-darwin: active (rbff marker present)"
+        ;;
+      active:unknown)
+        echo "- nix-darwin: active (origin unknown)"
+        echo "- migration: would prompt for snapshot"
+        ;;
+      inactive)
+        echo "- nix-darwin: not detected"
+        ;;
+    esac
+    if [[ "$(status_check_full)" != "0" ]]; then
+      exit 1
+    fi
+    ;;
+  *)
+    cat <<'USAGE'
+rbff doctor   - bootstrap + apply nix-darwin config
+rbff rebuild  - apply nix-darwin config
+rbff status   - show local setup status
+USAGE
+    ;;
+esac

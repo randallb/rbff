@@ -11,6 +11,7 @@
 
   homebrew = {
     enable = true;
+    user = config.system.primaryUser;
     casks = [
       "visual-studio-code"
       "discord"

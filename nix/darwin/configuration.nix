@@ -4,7 +4,7 @@
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
   nix.enable = false;
 
-  security.pam.enableSudoTouchIdAuth = true;
+  security.pam.services.sudo_local.touchIdAuth = true;
 
   system.keyboard.enableKeyMapping = true;
   system.keyboard.remapCapsLockToEscape = true;
@@ -17,6 +17,8 @@
       "chatgpt"
     ];
   };
+
+  system.primaryUser = builtins.getEnv "USER";
 
   environment.systemPackages = with pkgs; [
     sapling

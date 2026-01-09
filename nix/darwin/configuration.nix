@@ -14,6 +14,7 @@
     user = config.system.primaryUser;
     casks = [
       "1password"
+      "aqua-voice"
       "ableton-live-suite"
       "audio-hijack"
       "beeper"

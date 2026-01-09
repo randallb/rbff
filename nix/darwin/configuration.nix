@@ -19,7 +19,11 @@
     ];
   };
 
-  system.primaryUser = builtins.getEnv "USER";
+  system.primaryUser =
+    let
+      sudoUser = builtins.getEnv "SUDO_USER";
+    in
+      if sudoUser != "" then sudoUser else builtins.getEnv "USER";
   users.users.root.home = lib.mkForce "/var/root";
 
   environment.systemPackages = with pkgs; [

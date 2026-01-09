@@ -16,7 +16,11 @@
         inherit system;
         config.allowUnfree = true;
       };
-      username = builtins.getEnv "USER";
+      username =
+        let
+          sudoUser = builtins.getEnv "SUDO_USER";
+        in
+          if sudoUser != "" then sudoUser else builtins.getEnv "USER";
     in {
       darwinConfigurations.rbff = darwin.lib.darwinSystem {
         inherit system pkgs;

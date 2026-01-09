@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 {
   nixpkgs.config.allowUnfree = true;
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
@@ -19,7 +19,7 @@
   };
 
   system.primaryUser = builtins.getEnv "USER";
-  users.users.root.home = "/var/root";
+  users.users.root.home = lib.mkForce "/var/root";
 
   environment.systemPackages = with pkgs; [
     sapling

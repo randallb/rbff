@@ -9,17 +9,7 @@ RBFF_MARKER_PATH="${RBFF_MARKER_PATH:-/etc/rbff/active}"
 
 ensure_local_bin() {
   mkdir -p "$HOME/.local/bin"
-  if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
-    local shell_rc="$HOME/.zshrc"
-    if [[ -f "$shell_rc" ]] && ! grep -q "rbff.*local/bin" "$shell_rc"; then
-      {
-        echo ""
-        echo "# rbff"
-        echo "export PATH=\"$HOME/.local/bin:$PATH\""
-      } >> "$shell_rc"
-    fi
-    export PATH="$HOME/.local/bin:$PATH"
-  fi
+  export PATH="$HOME/.local/bin:$PATH"
 }
 
 find_rbpara_root() {

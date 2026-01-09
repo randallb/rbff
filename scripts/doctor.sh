@@ -7,17 +7,7 @@ RBFF_REMOTE_DEFAULT="${RBFF_REMOTE_DEFAULT:-https://github.com/randallb/rbff.git
 
 ensure_local_bin() {
   mkdir -p "$HOME/.local/bin"
-  if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
-    local shell_rc="$HOME/.zshrc"
-    if [[ -f "$shell_rc" ]] && ! grep -q "rbff.*local/bin" "$shell_rc"; then
-      {
-        echo ""
-        echo "# rbff"
-        echo "export PATH=\"$HOME/.local/bin:$PATH\""
-      } >> "$shell_rc"
-    fi
-    export PATH="$HOME/.local/bin:$PATH"
-  fi
+  export PATH="$HOME/.local/bin:$PATH"
 }
 
 ensure_nix() {

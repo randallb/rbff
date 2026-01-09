@@ -28,6 +28,7 @@
 
   environment.systemPackages = with pkgs; [
     sapling
+    codex
   ];
 
   environment.etc."rbff/active".text = "rbff\n";

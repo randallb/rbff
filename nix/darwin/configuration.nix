@@ -13,10 +13,58 @@
     enable = true;
     user = config.system.primaryUser;
     casks = [
-      "visual-studio-code"
-      "discord"
+      "1password"
+      "ableton-live-suite"
+      "audio-hijack"
+      "beeper"
+      "betterdisplay"
       "chatgpt"
+      "claude"
+      "deskpad"
+      "discord"
+      "elgato-stream-deck"
+      "epic-games"
+      "figma"
+      "ghostty"
+      "google-chrome"
+      "google-drive"
+      "iterm2"
+      "linear-linear"
+      "loopback"
+      "messenger"
+      "notion"
+      "notion-calendar"
+      "obsidian"
+      "orbstack"
+      "pop"
+      "raycast"
+      "replit"
+      "screen-studio"
+      "screens-connect"
+      "shortwave"
+      "slack"
+      "typefully"
+      "typora"
+      "virtualdj"
+      "visual-studio-code"
+      "waves-central"
+      "zoom"
     ];
+    masApps = {
+      "1Password for Safari" = 1569813296;
+      "Amazon Kindle" = 302584613;
+      "Final Cut Pro" = 424389933;
+      "Hush" = 1544743900;
+      "Magnet" = 441258766;
+      "Motion" = 434290957;
+      "OpenIn" = 6520390762;
+      "Pixelmator Pro" = 1289583905;
+      "Remote Desktop" = 1295203466;
+      "Screens 5" = 1663047912;
+      "WhatsApp" = 310633997;
+      "Xcode" = 497799835;
+      "stoic" = 1312926037;
+    };
   };
 
   system.primaryUser =

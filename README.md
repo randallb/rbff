@@ -16,6 +16,7 @@ rbff doctor --dry-run
 rbff rebuild        # apply nix-darwin config
 rbff rebuild --dry-run
 rbff status         # show local setup status
+rbff codex          # open Codex in rbff repo
 rbff journal        # open Codex in notes root
 rbff journal init   # create PARA structure + journal template
 ```

@@ -50,6 +50,19 @@ open_codex_notes() {
   (cd "$RBFF_NOTES_ROOT" && codex)
 }
 
+open_codex_repo() {
+  if [[ ! -d "$RBFF_REPO_DEFAULT" ]]; then
+    echo "rbff: repo not found at $RBFF_REPO_DEFAULT" >&2
+    echo "rbff: run 'rbff doctor' to clone it" >&2
+    return 1
+  fi
+  if ! command -v codex >/dev/null 2>&1; then
+    echo "rbff: codex not found; run 'rbff rebuild' to install it" >&2
+    return 1
+  fi
+  (cd "$RBFF_REPO_DEFAULT" && codex)
+}
+
 init_notes() {
   local year
   year="$(date +%Y)"
@@ -182,8 +195,7 @@ ensure_repo() {
 install_rbff_cli() {
   ensure_local_bin
   if [[ -f "$RBFF_REPO_DEFAULT/bin/rbff" ]]; then
-    cp "$RBFF_REPO_DEFAULT/bin/rbff" "$RBFF_BIN_TARGET"
-    chmod +x "$RBFF_BIN_TARGET"
+    ln -sf "$RBFF_REPO_DEFAULT/bin/rbff" "$RBFF_BIN_TARGET"
   fi
 }
 
@@ -348,6 +360,9 @@ case "$cmd" in
       exit 1
     fi
     ;;
+  codex)
+    open_codex_repo
+    ;;
   journal)
     subcmd="${1:-}"
     shift || true
@@ -375,6 +390,7 @@ USAGE
 rbff doctor   - bootstrap + apply nix-darwin config
 rbff rebuild  - apply nix-darwin config
 rbff status   - show local setup status
+rbff codex    - open Codex in rbff repo
 rbff journal  - notes + journal commands
 USAGE
     ;;

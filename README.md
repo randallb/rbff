@@ -21,6 +21,11 @@ rbff journal        # open Codex in notes root
 rbff journal init   # create PARA structure + journal template
 ```
 
+## Docs
+
+- [docs/USAGE.md](docs/USAGE.md)
+- [docs/DEV_WORKFLOW.md](docs/DEV_WORKFLOW.md)
+
 ## What This Configures
 
 - Caps Lock remapped to Escape

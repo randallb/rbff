@@ -33,7 +33,7 @@ brew_path() {
 ensure_notes_root() {
   if [[ ! -d "$RBFF_NOTES_ROOT" ]]; then
     echo "rbff: notes root not found at $RBFF_NOTES_ROOT" >&2
-    echo "rbff: run 'rbff journal init' to create it" >&2
+    echo "rbff: run 'rbff journal doctor' to create it" >&2
     return 1
   fi
   return 0
@@ -370,13 +370,13 @@ case "$cmd" in
       "" )
         open_codex_notes
         ;;
-      init)
+      doctor)
         init_notes
         ;;
       help|--help|-h)
         cat <<'USAGE'
 rbff journal         - open Codex in notes root
-rbff journal init    - create PARA structure and journal template
+rbff journal doctor  - create PARA structure and journal template
 USAGE
         ;;
       *)

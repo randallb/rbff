@@ -7,34 +7,38 @@
 
 ## End State
 
-- A stable rhythm that balances deep work, rest, and relationships.
+- A stable weekly rhythm that balances deep work, rest, and relationships.
 - Physical and mental health are resilient and improving.
 - Financial systems are predictable and reduce stress.
 - Creative and professional output compounds over time.
 - The home environment supports focus, recovery, and hospitality.
+- Relationships feel cared for, honest, and durable.
 
 ## Constraints
 
 - Do not trade long-term health or trust for short-term wins.
 - Avoid chronic overcommitment; protect recovery time.
-- Keep personal systems simple enough to maintain during busy seasons.
+- Keep personal systems simple enough to maintain in busy seasons.
+- Do not let work consume the relationships and rituals that make life whole.
 
 ## Tradeoffs
 
 - Depth over breadth.
 - Fewer high-leverage projects over many shallow ones.
 - Consistency over intensity.
+- Private craft over public performance.
 
 ## Risk tolerance
 
 - High for creative experiments and reversible choices.
+- Medium for career bets that preserve optionality.
 - Low for health, trust, and financial stability.
 
 ## Escalation conditions
 
 - Repeated burnout signals or sustained sleep/energy collapse.
 - Persistent relationship strain or loss of trust.
-- Financial instability that threatens basic needs.
+- Financial instability that threatens basic needs or long-run freedom.
 - Any area intent conflicts with this life intent.
 
 ## Verification steps

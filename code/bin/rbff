@@ -1,35 +1,77 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/usr/bin/env -S deno run --allow-run --allow-read
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+const decoder = new TextDecoder();
 
-cmd="${1:-}"
-shift || true
-
-open_obsidian() {
-  local target="${1:-$REPO_ROOT}"
-  if [[ "$target" != /* ]]; then
-    target="$REPO_ROOT/$target"
-  fi
-  if [[ ! -e "$target" ]]; then
-    echo "rbff: path not found: $target" >&2
-    exit 1
-  fi
-  open -a "Obsidian" "$target"
+function toPath(url) {
+  const path = new URL(url).pathname;
+  return decodeURIComponent(path);
 }
 
-case "$cmd" in
-  open|"" )
-    open_obsidian "${1:-$REPO_ROOT}"
-    ;;
-  help|--help|-h )
-    cat <<'USAGE'
-rbff open [path]  - open repo or specific file/folder in Obsidian
-USAGE
-    ;;
-  * )
-    echo "rbff: unknown command: $cmd" >&2
-    exit 1
-    ;;
-esac
+const scriptDir = toPath(new URL('.', import.meta.url));
+const repoRoot = await Deno.realPath(`${scriptDir}/../..`);
+const vault = 'rbff';
+
+function usage() {
+  console.log('rbff open [path]  - open repo or specific file/folder in Obsidian');
+}
+
+async function exists(path) {
+  try {
+    await Deno.stat(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function encode(value) {
+  return encodeURIComponent(value);
+}
+
+async function runOpen(args) {
+  const cmd = new Deno.Command('open', { args, stdin: 'null', stdout: 'null', stderr: 'null' });
+  const { success } = await cmd.spawn().status;
+  return success;
+}
+
+async function openObsidian(target) {
+  let fullPath = target ?? repoRoot;
+  if (!fullPath.startsWith('/')) {
+    fullPath = `${repoRoot}/${fullPath}`;
+  }
+  if (!await exists(fullPath)) {
+    console.error(`rbff: path not found: ${fullPath}`);
+    Deno.exit(1);
+  }
+
+  let rel = fullPath.startsWith(repoRoot) ? fullPath.slice(repoRoot.length + 1) : '';
+  const vaultParam = encode(vault);
+
+  if (rel.length === 0) {
+    await runOpen([`obsidian://open?vault=${vaultParam}`]);
+  } else {
+    rel = rel.replace(/^\/+/, '');
+    const fileParam = encode(rel);
+    await runOpen([`obsidian://open?vault=${vaultParam}&file=${fileParam}`]);
+  }
+
+  // Fallback: open the vault root in Obsidian if URL open fails.
+  await runOpen(['-a', 'Obsidian', repoRoot]);
+}
+
+const [cmd, ...rest] = Deno.args;
+
+switch (cmd ?? 'open') {
+  case 'open':
+  case '':
+    await openObsidian(rest[0]);
+    break;
+  case 'help':
+  case '--help':
+  case '-h':
+    usage();
+    break;
+  default:
+    console.error(`rbff: unknown command: ${cmd}`);
+    Deno.exit(1);
+}

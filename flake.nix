@@ -25,7 +25,7 @@
       darwinConfigurations.rbff = darwin.lib.darwinSystem {
         inherit system pkgs;
         modules = [
-          ./nix/darwin/configuration.nix
+          ./code/nix/darwin/configuration.nix
           home-manager.darwinModules.home-manager
           {
             home-manager.useGlobalPkgs = true;
@@ -33,7 +33,7 @@
             users.users.${username}.home = "/Users/${username}";
             home-manager.users.${username} = {
               home.username = username;
-              imports = [ ./nix/home-manager/home.nix ];
+              imports = [ ./code/nix/home-manager/home.nix ];
             };
           }
         ];

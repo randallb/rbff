@@ -20,8 +20,8 @@ arbitrary, and drift is caught early.
 
 - Life intent (memos/INTENT.md): quarterly.
 - Area intents (memos/0-*-*/INTENT.md, memos/1-*/INTENT.md, etc.): quarterly.
-- Project intents (memos/projects/.../INTENT.md): at each phase boundary and
-  before shipping.
+- Project intents (memos/<area>/projects/.../INTENT.md): at each phase boundary
+  and before shipping.
 
 ## Event triggers (applies to all scopes)
 

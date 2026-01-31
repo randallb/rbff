@@ -9,7 +9,10 @@ incidents, and initiatives. The root is company/life scope.
 - `<area>/` — ongoing responsibilities and cadences (create area folders at
   the `memos/` root). Use an order key prefix (e.g., `0-1-spirituality`) when
   you want lexical priority sorting.
-- `projects/` — time-bound efforts with defined end states.
+- The `memos/` root should only contain `INTENT.md` plus area folders (teams /
+  groups / domains); projects live under an area.
+- `<area>/projects/` — time-bound efforts with defined end states, scoped to an
+  area. Do not create a generic `memos/projects/` folder.
 - `resources/` — reusable runbooks, checklists, and templates.
 - `posts/` — execution updates or announcements.
 - `cross-company/` — shared resources and templates used across areas.

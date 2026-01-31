@@ -7,7 +7,8 @@ incidents, and initiatives. The root is company/life scope.
 
 - `INTENT.md` — life intent (company scope).
 - `<area>/` — ongoing responsibilities and cadences (create area folders at
-  the `memos/` root).
+  the `memos/` root). Use an order key prefix (e.g., `0-1-spirituality`) when
+  you want lexical priority sorting.
 - `projects/` — time-bound efforts with defined end states.
 - `resources/` — reusable runbooks, checklists, and templates.
 - `posts/` — execution updates or announcements.

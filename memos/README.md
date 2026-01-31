@@ -6,7 +6,8 @@ incidents, and initiatives. The root is company/life scope.
 ## Directory Map
 
 - `INTENT.md` — life intent (company scope).
-- `areas/` — ongoing responsibilities and cadences.
+- `<area>/` — ongoing responsibilities and cadences (create area folders at
+  the `memos/` root).
 - `projects/` — time-bound efforts with defined end states.
 - `resources/` — reusable runbooks, checklists, and templates.
 - `posts/` — execution updates or announcements.

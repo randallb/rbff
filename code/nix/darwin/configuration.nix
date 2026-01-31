@@ -51,21 +51,21 @@
       "waves-central"
       "zoom"
     ];
-    masApps = {
-      "1Password for Safari" = 1569813296;
-      "Amazon Kindle" = 302584613;
-      "Final Cut Pro" = 424389933;
-      "Hush" = 1544743900;
-      "Magnet" = 441258766;
-      "Motion" = 434290957;
-      "OpenIn" = 6520390762;
-      "Pixelmator Pro" = 1289583905;
-      # "Remote Desktop" = 1295203466;
-      "Screens 5" = 1663047912;
-      "WhatsApp" = 310633997;
-      "Xcode" = 497799835;
-      "stoic" = 1312926037;
-    };
+    # masApps = {
+    #   "1Password for Safari" = 1569813296;
+    #   "Amazon Kindle" = 302584613;
+    #   "Final Cut Pro" = 424389933;
+    #   "Hush" = 1544743900;
+    #   "Magnet" = 441258766;
+    #   "Motion" = 434290957;
+    #   "OpenIn" = 6520390762;
+    #   "Pixelmator Pro" = 1289583905;
+    #   # "Remote Desktop" = 1295203466;
+    #   "Screens 5" = 1663047912;
+    #   "WhatsApp" = 310633997;
+    #   "Xcode" = 497799835;
+    #   "stoic" = 1312926037;
+    # };
   };
 
   system.primaryUser =
@@ -79,6 +79,8 @@
     sapling
     codex
   ];
+
+  home-manager.backupFileExtension = "hm-bak";
 
   environment.etc."rbff/active".text = "rbff\n";
 

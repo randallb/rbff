@@ -2,38 +2,52 @@
 
 ## Purpose
 
-- <Why this life scope exists.>
+- Live with clarity, integrity, and depth while building a life that supports
+  meaningful work, strong relationships, and sustained well-being.
 
 ## End State
 
-- <Conditions that define success; not feature lists.>
+- A stable rhythm that balances deep work, rest, and relationships.
+- Physical and mental health are resilient and improving.
+- Financial systems are predictable and reduce stress.
+- Creative and professional output compounds over time.
+- The home environment supports focus, recovery, and hospitality.
 
 ## Constraints
 
-- <What must not happen.>
+- Do not trade long-term health or trust for short-term wins.
+- Avoid chronic overcommitment; protect recovery time.
+- Keep personal systems simple enough to maintain during busy seasons.
 
 ## Tradeoffs
 
-- <Decisions already made (this over that).>
+- Depth over breadth.
+- Fewer high-leverage projects over many shallow ones.
+- Consistency over intensity.
 
 ## Risk tolerance
 
-- <How bold we can be.>
+- High for creative experiments and reversible choices.
+- Low for health, trust, and financial stability.
 
 ## Escalation conditions
 
-- <When to pause or escalate.>
+- Repeated burnout signals or sustained sleep/energy collapse.
+- Persistent relationship strain or loss of trust.
+- Financial instability that threatens basic needs.
+- Any area intent conflicts with this life intent.
 
 ## Verification steps
 
-- <Signals/metrics/commands that prove success.>
+- Weekly review of energy, output, relationships, and health signals.
+- Monthly review of finances, systems, and progress on key projects.
+- Quarterly intent revalidation and adjustment.
 
 ## Activation / revalidation
 
-- <When should this intent start governing decisions? What must be true?>
-- <When should this intent stop governing decisions? What condition ends or
-  supersedes it?>
-- <What should trigger a deliberate review/revalidation of this intent?>
+- Active immediately upon adoption.
+- Superseded when a new life intent is explicitly adopted.
+- Revalidate quarterly or after major life changes.
 
 ## Appendix
 
@@ -41,7 +55,3 @@
 
 - `policy/product-command.md`
 - `policy/documentation-organization.md`
-
-### Related
-
-- <Nearby projects or docs worth linking.>

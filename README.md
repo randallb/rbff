@@ -14,6 +14,10 @@ From the repo root:
 This installs Nix (via Determinate Systems) and Homebrew if missing, then
 applies the nix-darwin flake.
 
+Notes:
+- The flake picks the current Mac architecture automatically (`aarch64-darwin` or `x86_64-darwin`).
+- `--impure` is required (the flake reads `$USER` / `$SUDO_USER` to pick the primary user).
+
 ## Apply Manually
 
 ```bash

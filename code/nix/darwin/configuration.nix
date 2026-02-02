@@ -78,6 +78,7 @@
   environment.systemPackages = with pkgs; [
     sapling
     codex
+    deno
   ];
 
   home-manager.backupFileExtension = "hm-bak";

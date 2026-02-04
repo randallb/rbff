@@ -79,6 +79,7 @@
     sapling
     codex
     deno
+    gh
   ];
 
   home-manager.backupFileExtension = "hm-bak";

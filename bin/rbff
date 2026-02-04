@@ -1,0 +1,472 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+RBFF_REPO_DEFAULT="${RBFF_REPO_DEFAULT:-$HOME/code/rbff}"
+RBFF_BIN_TARGET="${RBFF_BIN_TARGET:-$HOME/.local/bin/rbff}"
+RBFF_REMOTE_DEFAULT="${RBFF_REMOTE_DEFAULT:-https://github.com/randallb/rbff.git}"
+RBFF_MIGRATE_FROM="${RBFF_MIGRATE_FROM:-}"
+RBFF_MARKER_PATH="${RBFF_MARKER_PATH:-/etc/rbff/active}"
+RBFF_NOTES_ROOT="${RBFF_NOTES_ROOT:-$HOME/Documents/Notes}"
+RBFF_GAMBIT_REPO_DECK="${RBFF_GAMBIT_REPO_DECK:-gambit.deck.md}"
+RBFF_GAMBIT_NOTES_DECK="${RBFF_GAMBIT_NOTES_DECK:-gambit.deck.md}"
+RBFF_GAMBIT_CLI="${RBFF_GAMBIT_CLI:-}"
+
+ensure_local_bin() {
+  mkdir -p "$HOME/.local/bin"
+  export PATH="$HOME/.local/bin:$PATH"
+}
+
+brew_path() {
+  local brew_bin
+  if brew_bin="$(command -v brew 2>/dev/null)"; then
+    echo "$brew_bin"
+    return 0
+  fi
+  if [[ -x /opt/homebrew/bin/brew ]]; then
+    echo "/opt/homebrew/bin/brew"
+    return 0
+  fi
+  if [[ -x /usr/local/bin/brew ]]; then
+    echo "/usr/local/bin/brew"
+    return 0
+  fi
+  return 1
+}
+
+ensure_notes_root() {
+  if [[ ! -d "$RBFF_NOTES_ROOT" ]]; then
+    echo "rbff: notes root not found at $RBFF_NOTES_ROOT" >&2
+    echo "rbff: run 'rbff journal doctor' to create it" >&2
+    return 1
+  fi
+  return 0
+}
+
+print_usage() {
+  cat <<'USAGE'
+rbff doctor         - bootstrap + apply nix-darwin config
+rbff rebuild        - apply nix-darwin config
+rbff status         - show local setup status
+rbff codex          - open Codex in rbff repo
+rbff gambit         - open Gambit in rbff repo
+rbff journal        - open Gambit in notes root
+rbff journal doctor - create PARA structure + journal template
+USAGE
+}
+
+open_codex_notes() {
+  if ! ensure_notes_root; then
+    return 1
+  fi
+  if ! command -v codex >/dev/null 2>&1; then
+    echo "rbff: codex not found; run 'rbff rebuild' to install it" >&2
+    return 1
+  fi
+  (cd "$RBFF_NOTES_ROOT" && codex)
+}
+
+open_codex_repo() {
+  if [[ ! -d "$RBFF_REPO_DEFAULT" ]]; then
+    echo "rbff: repo not found at $RBFF_REPO_DEFAULT" >&2
+    echo "rbff: run 'rbff doctor' to clone it" >&2
+    return 1
+  fi
+  if ! command -v codex >/dev/null 2>&1; then
+    echo "rbff: codex not found; run 'rbff rebuild' to install it" >&2
+    return 1
+  fi
+  (cd "$RBFF_REPO_DEFAULT" && codex)
+}
+
+resolve_deck_path() {
+  local base="$1"
+  local deck="$2"
+  if [[ "$deck" = /* ]]; then
+    echo "$deck"
+  else
+    echo "$base/$deck"
+  fi
+}
+
+run_gambit_repl() {
+  local deck_path="$1"
+  if [[ -n "$RBFF_GAMBIT_CLI" ]]; then
+    local cli_path="$RBFF_GAMBIT_CLI"
+    if [[ "$cli_path" == "~"* ]]; then
+      cli_path="${cli_path/#\~/$HOME}"
+    fi
+    if ! command -v deno >/dev/null 2>&1; then
+      echo "rbff: deno not found; install deno to use RBFF_GAMBIT_CLI" >&2
+      return 1
+    fi
+    deno run -A "$cli_path" repl "$deck_path"
+    return $?
+  fi
+  if command -v gambit >/dev/null 2>&1; then
+    gambit repl "$deck_path"
+    return $?
+  fi
+  if ! command -v deno >/dev/null 2>&1; then
+    echo "rbff: gambit not found; install gambit or deno to use this command" >&2
+    return 1
+  fi
+  deno run -A jsr:@bolt-foundry/gambit/cli repl "$deck_path"
+}
+
+open_gambit_notes() {
+  if ! ensure_notes_root; then
+    return 1
+  fi
+  local deck_path
+  deck_path="$(resolve_deck_path "$RBFF_NOTES_ROOT" "$RBFF_GAMBIT_NOTES_DECK")"
+  if [[ ! -f "$deck_path" ]]; then
+    echo "rbff: gambit deck not found at $deck_path" >&2
+    return 1
+  fi
+  (cd "$RBFF_NOTES_ROOT" && run_gambit_repl "$deck_path")
+}
+
+open_gambit_repo() {
+  if [[ ! -d "$RBFF_REPO_DEFAULT" ]]; then
+    echo "rbff: repo not found at $RBFF_REPO_DEFAULT" >&2
+    echo "rbff: run 'rbff doctor' to clone it" >&2
+    return 1
+  fi
+  local deck_path
+  deck_path="$(resolve_deck_path "$RBFF_REPO_DEFAULT" "$RBFF_GAMBIT_REPO_DECK")"
+  if [[ ! -f "$deck_path" ]]; then
+    echo "rbff: gambit deck not found at $deck_path" >&2
+    return 1
+  fi
+  (cd "$RBFF_REPO_DEFAULT" && run_gambit_repl "$deck_path")
+}
+
+init_notes() {
+  local year
+  year="$(date +%Y)"
+  mkdir -p \
+    "$RBFF_NOTES_ROOT/projects" \
+    "$RBFF_NOTES_ROOT/areas" \
+    "$RBFF_NOTES_ROOT/resources/logs/$year" \
+    "$RBFF_NOTES_ROOT/archive"
+
+  local template_path="$RBFF_NOTES_ROOT/resources/logs/_template.md"
+  if [[ ! -f "$template_path" ]]; then
+    cat > "$template_path" <<'TEMPLATE'
+# Daily Journal
+
+## Plan
+
+## Log
+
+## Wins
+
+## Notes
+TEMPLATE
+  fi
+
+  local agents_path="$RBFF_NOTES_ROOT/AGENTS.md"
+  if [[ ! -f "$agents_path" ]]; then
+    cat > "$agents_path" <<'AGENTS'
+# Notes (PARA)
+
+This directory uses PARA:
+- projects/
+- areas/
+- resources/
+- archive/
+
+Journals live in resources/logs/YYYY/YYYY-MM-DD.md
+Daily template: resources/logs/_template.md
+AGENTS
+  fi
+}
+
+find_rbpara_root() {
+  if [[ -n "$RBFF_MIGRATE_FROM" ]] && [[ -d "$RBFF_MIGRATE_FROM" ]]; then
+    echo "$RBFF_MIGRATE_FROM"
+    return 0
+  fi
+
+  local candidates=(
+    "$HOME/code/rbpara"
+    "$HOME/Documents/rbpara"
+    "$HOME/Library/Mobile Documents/com~apple~CloudDocs/rbpara"
+  )
+  local candidate
+  for candidate in "${candidates[@]}"; do
+    if [[ -d "$candidate" ]]; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+detect_nix_darwin() {
+  if [[ -L /run/current-system ]] || [[ -d /run/current-system ]]; then
+    if [[ -f "$RBFF_MARKER_PATH" ]]; then
+      echo "active:rbff"
+    else
+      echo "active:unknown"
+    fi
+  else
+    echo "inactive"
+  fi
+}
+
+status_check_prereqs() {
+  local ok=0
+  if ! command -v nix >/dev/null 2>&1; then
+    ok=1
+  fi
+  if ! brew_path >/dev/null 2>&1; then
+    ok=1
+  fi
+  if [[ ! -d "$RBFF_REPO_DEFAULT" ]]; then
+    ok=1
+  fi
+  echo "$ok"
+}
+
+status_check_full() {
+  local ok
+  ok="$(status_check_prereqs)"
+  if [[ ! -f "$RBFF_BIN_TARGET" ]]; then
+    ok=1
+  fi
+  echo "$ok"
+}
+
+maybe_migrate() {
+  local rbpara_root
+  if [[ "$(detect_nix_darwin)" != "active:unknown" ]]; then
+    return 0
+  fi
+
+  if [[ ! -t 0 ]]; then
+    return 0
+  fi
+
+  if rbpara_root="$(find_rbpara_root)"; then
+    echo "rbff: detected rbpara at $rbpara_root"
+    echo "Snapshot captures: source path, darwin generations, brew casks."
+    read -r -p "Run migration snapshot? [y/N] " reply
+    if [[ "$reply" =~ ^[Yy]$ ]]; then
+      "$RBFF_REPO_DEFAULT/scripts/migrate.sh" "$rbpara_root"
+    fi
+  fi
+}
+
+ensure_repo() {
+  if [[ ! -d "$RBFF_REPO_DEFAULT" ]]; then
+    mkdir -p "$(dirname "$RBFF_REPO_DEFAULT")"
+    if command -v sl >/dev/null 2>&1; then
+      sl clone "$RBFF_REMOTE_DEFAULT" "$RBFF_REPO_DEFAULT"
+    else
+      nix --extra-experimental-features "nix-command flakes" \
+        shell nixpkgs#sapling -c sl clone "$RBFF_REMOTE_DEFAULT" "$RBFF_REPO_DEFAULT"
+    fi
+  fi
+}
+
+install_rbff_cli() {
+  ensure_local_bin
+  if [[ -f "$RBFF_REPO_DEFAULT/bin/rbff" ]]; then
+    ln -sf "$RBFF_REPO_DEFAULT/bin/rbff" "$RBFF_BIN_TARGET"
+  fi
+}
+
+ensure_nix() {
+  if ! command -v nix >/dev/null 2>&1; then
+    curl -sSfL https://install.determinate.systems/nix | sh -s -- install
+  fi
+}
+
+ensure_brew() {
+  if ! brew_path >/dev/null 2>&1; then
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  fi
+}
+
+run_darwin_switch() {
+  local flake_ref="${RBFF_REPO_DEFAULT}#rbff"
+  local sudo_cmd=""
+  if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
+    sudo_cmd="sudo"
+  fi
+  if command -v darwin-rebuild >/dev/null 2>&1; then
+    $sudo_cmd darwin-rebuild switch --flake "$flake_ref" --impure
+  else
+    $sudo_cmd nix --extra-experimental-features "nix-command flakes" \
+      run github:LnL7/nix-darwin -- switch --flake "$flake_ref" --impure
+  fi
+}
+
+cmd="${1:-}"
+shift || true
+dry_run="false"
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run)
+      dry_run="true"
+      ;;
+  esac
+done
+case "$cmd" in
+  "")
+    print_usage
+    ;;
+  doctor)
+    if [[ "$dry_run" == "true" ]]; then
+      echo "rbff doctor (dry-run):"
+      if command -v nix >/dev/null 2>&1; then
+        echo "- nix: present"
+      else
+        echo "- nix: missing (would install)"
+      fi
+      if brew_bin="$(brew_path)"; then
+        echo "- brew: present at $brew_bin"
+      else
+        echo "- brew: missing (would install)"
+      fi
+      if [[ -d "$RBFF_REPO_DEFAULT" ]]; then
+        echo "- repo: present at $RBFF_REPO_DEFAULT"
+      else
+        echo "- repo: missing (would clone to $RBFF_REPO_DEFAULT)"
+      fi
+      if [[ -f "$RBFF_BIN_TARGET" ]]; then
+        echo "- rbff: present at $RBFF_BIN_TARGET"
+      else
+        echo "- rbff: missing (would install to $RBFF_BIN_TARGET)"
+      fi
+      case "$(detect_nix_darwin)" in
+        active:rbff)
+          echo "- nix-darwin: active (rbff marker present)"
+          ;;
+        active:unknown)
+          echo "- nix-darwin: active (origin unknown)"
+          echo "- migration: would prompt for snapshot"
+          ;;
+        inactive)
+          echo "- nix-darwin: not detected"
+          ;;
+      esac
+      echo "- would run: darwin-rebuild switch --flake $RBFF_REPO_DEFAULT#rbff --impure"
+      exit 0
+    fi
+    ensure_nix
+    ensure_brew
+    ensure_repo
+    install_rbff_cli
+    maybe_migrate
+    run_darwin_switch
+    ;;
+  rebuild)
+    if [[ "$dry_run" == "true" ]]; then
+      echo "rbff rebuild (dry-run):"
+      if [[ -d "$RBFF_REPO_DEFAULT" ]]; then
+        echo "- repo: present at $RBFF_REPO_DEFAULT"
+      else
+        echo "- repo: missing (would fail without doctor)"
+      fi
+      if command -v nix >/dev/null 2>&1; then
+        echo "- nix: present"
+      else
+        echo "- nix: missing (would fail without doctor)"
+      fi
+      if brew_bin="$(brew_path)"; then
+        echo "- brew: present at $brew_bin"
+      else
+        echo "- brew: missing (would fail without doctor)"
+      fi
+      case "$(detect_nix_darwin)" in
+        active:rbff)
+          echo "- nix-darwin: active (rbff marker present)"
+          ;;
+        active:unknown)
+          echo "- nix-darwin: active (origin unknown)"
+          ;;
+        inactive)
+          echo "- nix-darwin: not detected"
+          ;;
+      esac
+      echo "- would run: darwin-rebuild switch --flake $RBFF_REPO_DEFAULT#rbff --impure"
+      exit 0
+    fi
+    if [[ "$(status_check_prereqs)" != "0" ]]; then
+      echo "rbff: missing prerequisites; run rbff status or rbff doctor" >&2
+      exit 1
+    fi
+    run_darwin_switch
+    ;;
+  status)
+    echo "rbff status:"
+    if command -v nix >/dev/null 2>&1; then
+      echo "- nix: present"
+    else
+      echo "- nix: missing"
+    fi
+    if brew_bin="$(brew_path)"; then
+      echo "- brew: present at $brew_bin"
+    else
+      echo "- brew: missing"
+    fi
+    if [[ -d "$RBFF_REPO_DEFAULT" ]]; then
+      echo "- repo: present at $RBFF_REPO_DEFAULT"
+    else
+      echo "- repo: missing"
+    fi
+    if [[ -f "$RBFF_BIN_TARGET" ]]; then
+      echo "- rbff: present at $RBFF_BIN_TARGET"
+    else
+      echo "- rbff: missing"
+    fi
+    case "$(detect_nix_darwin)" in
+      active:rbff)
+        echo "- nix-darwin: active (rbff marker present)"
+        ;;
+      active:unknown)
+        echo "- nix-darwin: active (origin unknown)"
+        echo "- migration: would prompt for snapshot"
+        ;;
+      inactive)
+        echo "- nix-darwin: not detected"
+        ;;
+    esac
+    if [[ "$(status_check_full)" != "0" ]]; then
+      exit 1
+    fi
+    ;;
+  codex)
+    open_codex_repo
+    ;;
+  gambit)
+    open_gambit_repo
+    ;;
+  journal)
+    subcmd="${1:-}"
+    shift || true
+    case "$subcmd" in
+      "" )
+        open_gambit_notes
+        ;;
+      doctor)
+        init_notes
+        ;;
+      help|--help|-h)
+        cat <<'USAGE'
+rbff journal         - open Gambit in notes root
+rbff journal doctor  - create PARA structure and journal template
+USAGE
+        ;;
+      *)
+        echo "rbff: unknown journal command: $subcmd" >&2
+        exit 1
+        ;;
+    esac
+    ;;
+  *)
+    print_usage
+    ;;
+esac

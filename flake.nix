@@ -11,7 +11,12 @@
 
   outputs = { self, nixpkgs, darwin, home-manager }:
     let
-      system = builtins.currentSystem;
+      system =
+        if builtins ? currentSystem then
+          builtins.currentSystem
+        else
+          let envSystem = builtins.getEnv "NIX_SYSTEM";
+          in if envSystem != "" then envSystem else "aarch64-darwin";
       pkgs = import nixpkgs {
         inherit system;
         config.allowUnfree = true;

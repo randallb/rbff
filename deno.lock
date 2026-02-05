@@ -15,6 +15,8 @@
     "jsr:@std/tar@~0.1.9": "0.1.9",
     "jsr:@std/toml@^1.0.3": "1.0.11",
     "jsr:@std/yaml@^1.0.5": "1.0.10",
+    "npm:@openai/codex@0.98": "0.98.0",
+    "npm:@openai/codex@latest": "0.98.0",
     "npm:openai@^4.78.1": "4.104.0_zod@3.25.76",
     "npm:zod-to-json-schema@^3.23.0": "3.24.6_zod@3.25.76",
     "npm:zod@^3.23.8": "3.25.76"
@@ -97,6 +99,10 @@
     }
   },
   "npm": {
+    "@openai/codex@0.98.0": {
+      "integrity": "sha512-CKjrhAmzTvWn7Vbsi27iZRKBAJw9a7ZTTkWQDbLgQZP1weGbDIBk1r6wiLEp1ZmDO7w0fHPLYgnVspiOrYgcxg==",
+      "bin": true
+    },
     "@types/node-fetch@2.6.13": {
       "integrity": "sha512-QGpRVpzSaUs30JBSGPjOg4Uveu384erbHBoT1zeONvyCfwQxIkUshLAOqN/k9EjGviPRmWTTe6aH2qySWKTVSw==",
       "dependencies": [
@@ -316,7 +322,8 @@
   "workspace": {
     "dependencies": [
       "jsr:@bolt-foundry/gambit@~0.5.2",
-      "jsr:@std/assert@1"
+      "jsr:@std/assert@1",
+      "npm:@openai/codex@0.98"
     ]
   }
 }

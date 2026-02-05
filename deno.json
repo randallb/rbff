@@ -1,9 +1,13 @@
 {
   "tasks": {
-    "dev": "deno run --watch main.ts"
+    "dev": "deno run --watch main.ts",
+    "check": "deno check main.ts code/bin/rbff",
+    "test": "deno test",
+    "validate": "deno task check && deno task test"
   },
   "imports": {
     "@bolt-foundry/gambit": "jsr:@bolt-foundry/gambit@^0.5.2",
+    "@openai/codex": "npm:@openai/codex@^0.98.0",
     "@std/assert": "jsr:@std/assert@1"
   }
 }

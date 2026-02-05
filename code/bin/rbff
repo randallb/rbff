@@ -1,8 +1,6 @@
 #!/usr/bin/env -S deno run --allow-run --allow-read
 
-const decoder = new TextDecoder();
-
-function toPath(url) {
+function toPath(url: string | URL): string {
   const path = new URL(url).pathname;
   return decodeURIComponent(path);
 }
@@ -15,7 +13,7 @@ function usage() {
   console.log('rbff open [path]  - open repo or specific file/folder in Obsidian');
 }
 
-async function exists(path) {
+async function exists(path: string): Promise<boolean> {
   try {
     await Deno.stat(path);
     return true;
@@ -24,17 +22,17 @@ async function exists(path) {
   }
 }
 
-function encode(value) {
+function encode(value: string): string {
   return encodeURIComponent(value);
 }
 
-async function runOpen(args) {
+async function runOpen(args: string[]): Promise<boolean> {
   const cmd = new Deno.Command('open', { args, stdin: 'null', stdout: 'null', stderr: 'null' });
   const { success } = await cmd.spawn().status;
   return success;
 }
 
-async function openObsidian(target) {
+async function openObsidian(target: string | undefined): Promise<void> {
   let fullPath = target ?? repoRoot;
   if (!fullPath.startsWith('/')) {
     fullPath = `${repoRoot}/${fullPath}`;

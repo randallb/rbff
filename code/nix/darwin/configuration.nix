@@ -77,7 +77,6 @@
 
   environment.systemPackages = with pkgs; [
     sapling
-    codex
     deno
     gh
   ];

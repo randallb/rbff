@@ -16,6 +16,7 @@ Defaults are set via env vars in `bin/rbff`:
 
 - `rbff`: prints help.
 - `rbff codex`: opens Codex in the rbff repo.
+- `rbff codex upgrade`: refreshes the Deno Codex cache.
 - `rbff gambit`: opens Gambit in the rbff repo.
 - `rbff journal`: opens Gambit in notes root.
 - `rbff journal doctor`: creates PARA folders + a daily template.
@@ -46,3 +47,5 @@ If `gambit` isn't installed, `rbff` falls back to `deno run -A jsr:@bolt-foundry
 - `RBFF_NOTES_ROOT`: notes directory for `rbff journal`
 - `RBFF_GAMBIT_REPO_DECK`: deck path (relative to repo or absolute) for `rbff gambit`
 - `RBFF_GAMBIT_NOTES_DECK`: deck path (relative to notes root or absolute) for `rbff journal`
+- `RBFF_CODEX_CLI`: Codex CLI for Deno (default: `npm:@openai/codex@latest`)
+- `RBFF_CODEX_RELOAD`: set to `1` to force Deno to reload Codex on every run

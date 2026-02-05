@@ -10,6 +10,8 @@ RBFF_NOTES_ROOT="${RBFF_NOTES_ROOT:-$HOME/Documents/Notes}"
 RBFF_GAMBIT_REPO_DECK="${RBFF_GAMBIT_REPO_DECK:-gambit.deck.md}"
 RBFF_GAMBIT_NOTES_DECK="${RBFF_GAMBIT_NOTES_DECK:-gambit.deck.md}"
 RBFF_GAMBIT_CLI="${RBFF_GAMBIT_CLI:-}"
+RBFF_CODEX_CLI="${RBFF_CODEX_CLI:-npm:@openai/codex@latest}"
+RBFF_CODEX_RELOAD="${RBFF_CODEX_RELOAD:-}"
 
 ensure_local_bin() {
   mkdir -p "$HOME/.local/bin"
@@ -48,21 +50,46 @@ rbff doctor         - bootstrap + apply nix-darwin config
 rbff rebuild        - apply nix-darwin config
 rbff status         - show local setup status
 rbff codex          - open Codex in rbff repo
+rbff codex upgrade  - refresh Deno Codex cache
 rbff gambit         - open Gambit in rbff repo
 rbff journal        - open Gambit in notes root
 rbff journal doctor - create PARA structure + journal template
 USAGE
 }
 
+run_codex_cli() {
+  if command -v codex >/dev/null 2>&1; then
+    codex "$@"
+    return $?
+  fi
+  if ! command -v deno >/dev/null 2>&1; then
+    echo "rbff: codex not found; install codex or deno" >&2
+    return 1
+  fi
+  local deno_args=(run -A)
+  if [[ "$RBFF_CODEX_RELOAD" == "1" ]]; then
+    deno_args+=(--reload)
+  fi
+  deno "${deno_args[@]}" "$RBFF_CODEX_CLI" "$@"
+}
+
+run_codex_upgrade() {
+  if command -v codex >/dev/null 2>&1; then
+    echo "rbff: codex is on PATH; upgrade via nix-darwin or your package manager" >&2
+    return 0
+  fi
+  if ! command -v deno >/dev/null 2>&1; then
+    echo "rbff: deno not found; install deno to upgrade codex" >&2
+    return 1
+  fi
+  deno install "$RBFF_CODEX_CLI"
+}
+
 open_codex_notes() {
   if ! ensure_notes_root; then
     return 1
   fi
-  if ! command -v codex >/dev/null 2>&1; then
-    echo "rbff: codex not found; run 'rbff rebuild' to install it" >&2
-    return 1
-  fi
-  (cd "$RBFF_NOTES_ROOT" && codex)
+  (cd "$RBFF_NOTES_ROOT" && run_codex_cli)
 }
 
 open_codex_repo() {
@@ -71,11 +98,7 @@ open_codex_repo() {
     echo "rbff: run 'rbff doctor' to clone it" >&2
     return 1
   fi
-  if ! command -v codex >/dev/null 2>&1; then
-    echo "rbff: codex not found; run 'rbff rebuild' to install it" >&2
-    return 1
-  fi
-  (cd "$RBFF_REPO_DEFAULT" && codex)
+  (cd "$RBFF_REPO_DEFAULT" && run_codex_cli)
 }
 
 resolve_deck_path() {
@@ -240,6 +263,7 @@ status_check_full() {
 
 maybe_migrate() {
   local rbpara_root
+  local migrate_script=""
   if [[ "$(detect_nix_darwin)" != "active:unknown" ]]; then
     return 0
   fi
@@ -251,9 +275,17 @@ maybe_migrate() {
   if rbpara_root="$(find_rbpara_root)"; then
     echo "rbff: detected rbpara at $rbpara_root"
     echo "Snapshot captures: source path, darwin generations, brew casks."
+    if [[ -x "$RBFF_REPO_DEFAULT/code/scripts/migrate.sh" ]]; then
+      migrate_script="$RBFF_REPO_DEFAULT/code/scripts/migrate.sh"
+    elif [[ -x "$RBFF_REPO_DEFAULT/scripts/migrate.sh" ]]; then
+      migrate_script="$RBFF_REPO_DEFAULT/scripts/migrate.sh"
+    else
+      echo "rbff: migration script not found; expected code/scripts/migrate.sh" >&2
+      return 0
+    fi
     read -r -p "Run migration snapshot? [y/N] " reply
     if [[ "$reply" =~ ^[Yy]$ ]]; then
-      "$RBFF_REPO_DEFAULT/scripts/migrate.sh" "$rbpara_root"
+      "$migrate_script" "$rbpara_root"
     fi
   fi
 }
@@ -439,7 +471,26 @@ case "$cmd" in
     fi
     ;;
   codex)
-    open_codex_repo
+    subcmd="${1:-}"
+    shift || true
+    case "$subcmd" in
+      "" )
+        open_codex_repo
+        ;;
+      upgrade)
+        run_codex_upgrade
+        ;;
+      help|--help|-h)
+        cat <<'USAGE'
+rbff codex         - open Codex in rbff repo
+rbff codex upgrade - refresh Deno Codex cache
+USAGE
+        ;;
+      *)
+        echo "rbff: unknown codex command: $subcmd" >&2
+        exit 1
+        ;;
+    esac
     ;;
   gambit)
     open_gambit_repo

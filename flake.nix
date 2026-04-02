@@ -26,8 +26,7 @@
           sudoUser = builtins.getEnv "SUDO_USER";
         in
           if sudoUser != "" then sudoUser else builtins.getEnv "USER";
-    in {
-      darwinConfigurations.rbff = darwin.lib.darwinSystem {
+      mkRbffDarwinConfig = extraModules: darwin.lib.darwinSystem {
         inherit system pkgs;
         modules = [
           ./code/nix/darwin/configuration.nix
@@ -41,8 +40,15 @@
               imports = [ ./code/nix/home-manager/home.nix ];
             };
           }
-        ];
+        ] ++ extraModules;
       };
+    in {
+      darwinConfigurations.rbff = mkRbffDarwinConfig [ ];
+      darwinConfigurations.rbff-no-homebrew = mkRbffDarwinConfig [
+        ({ lib, ... }: {
+          homebrew.enable = lib.mkForce false;
+        })
+      ];
       devShells.${system}.default = pkgs.mkShell {
         packages = [
           pkgs.deno

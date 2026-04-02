@@ -12,7 +12,8 @@ From the repo root:
 ```
 
 This installs Nix (via Determinate Systems) and Homebrew if missing, then
-applies the nix-darwin flake.
+clones the sibling `bfmono` checkout if missing, applies the nix-darwin flake,
+and installs the global Deno `codex` shim.
 
 For a fresh Mac, you can bootstrap directly with:
 
@@ -46,6 +47,18 @@ nix --extra-experimental-features "nix-command flakes" \
 - home-manager: `code/nix/home-manager/home.nix`
 - app lists: `homebrew.casks` and `homebrew.masApps` in
   `code/nix/darwin/configuration.nix`
+
+## Codex
+
+`codex` is not installed by nix-darwin in this repo. It is installed globally
+through Deno:
+
+```bash
+deno install -g -A --name codex npm:@openai/codex
+```
+
+`rbff doctor` and `rbff rebuild` run that install step after the nix-darwin
+switch. `home-manager` adds `~/.deno/bin` to `PATH`.
 
 ## Structure
 

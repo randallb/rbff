@@ -29,6 +29,7 @@
       "ghostty"
       "google-chrome"
       "google-drive"
+      "granola"
       "iterm2"
       "linear-linear"
       "loopback"
@@ -37,7 +38,7 @@
       "notion-calendar"
       "obsidian"
       "orbstack"
-      "pop"
+      "pop-app"
       "raycast"
       "replit"
       "screen-studio"
@@ -51,21 +52,22 @@
       "waves-central"
       "zoom"
     ];
-    # masApps = {
-    #   "1Password for Safari" = 1569813296;
-    #   "Amazon Kindle" = 302584613;
-    #   "Final Cut Pro" = 424389933;
-    #   "Hush" = 1544743900;
-    #   "Magnet" = 441258766;
-    #   "Motion" = 434290957;
-    #   "OpenIn" = 6520390762;
-    #   "Pixelmator Pro" = 1289583905;
-    #   # "Remote Desktop" = 1295203466;
+     masApps = {
+      "1Password for Safari" = 1569813296;
+      "Amazon Kindle" = 302584613;
+      "stoic" = 1312926037;
+      "WhatsApp" = 310633997;
+      "Hush" = 1544743900;
+      "Inset - Preview Any Screen Area" = 6759235673;
+      "Magnet" = 441258766;
+      "OpenIn 4 - Advanced Link Handler" = 1643649331;
+      "Pixelmator Pro" = 1289583905;
+      # "Remote Desktop" = 1295203466;
     #   "Screens 5" = 1663047912;
-    #   "WhatsApp" = 310633997;
-    #   "Xcode" = 497799835;
-    #   "stoic" = 1312926037;
-    # };
+      "Xcode" = 497799835;
+      "Final Cut Pro" = 424389933;
+      "Motion" = 434290957;
+     };
   };
 
   system.primaryUser =
@@ -77,10 +79,36 @@
 
   environment.systemPackages = with pkgs; [
     sapling
-    codex
     deno
+    git
     gh
   ];
+
+  system.defaults.finder = {
+    FXPreferredViewStyle = "Nlsv";
+    ShowStatusBar = true;
+  };
+
+  system.defaults.CustomUserPreferences = {
+    "com.apple.finder" = {
+      StandardViewSettings = {
+        ListViewSettings = {
+          calculateAllSizes = true;
+        };
+        ExtendedListViewSettingsV2 = {
+          calculateAllSizes = true;
+        };
+      };
+      FK_StandardViewSettings = {
+        ListViewSettings = {
+          calculateAllSizes = true;
+        };
+        ExtendedListViewSettingsV2 = {
+          calculateAllSizes = true;
+        };
+      };
+    };
+  };
 
   home-manager.backupFileExtension = "hm-bak";
 

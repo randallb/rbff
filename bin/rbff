@@ -4,6 +4,11 @@ set -euo pipefail
 RBFF_REPO_DEFAULT="${RBFF_REPO_DEFAULT:-$HOME/code/rbff}"
 RBFF_BIN_TARGET="${RBFF_BIN_TARGET:-$HOME/.local/bin/rbff}"
 RBFF_REMOTE_DEFAULT="${RBFF_REMOTE_DEFAULT:-https://github.com/randallb/rbff.git}"
+RBFF_BFMONO_DEFAULT="${RBFF_BFMONO_DEFAULT:-$(dirname "$RBFF_REPO_DEFAULT")/bolt-foundry/bfmono}"
+RBFF_BFMONO_REMOTE_DEFAULT="${RBFF_BFMONO_REMOTE_DEFAULT:-https://github.com/bolt-foundry/bfmono.git}"
+RBFF_BFMONO_PATH="${RBFF_BFMONO_PATH:-$RBFF_BFMONO_DEFAULT}"
+RBFF_GIT_USER_NAME="${RBFF_GIT_USER_NAME:-}"
+RBFF_GIT_USER_EMAIL="${RBFF_GIT_USER_EMAIL:-}"
 RBFF_MIGRATE_FROM="${RBFF_MIGRATE_FROM:-}"
 RBFF_MARKER_PATH="${RBFF_MARKER_PATH:-/etc/rbff/active}"
 RBFF_NOTES_ROOT="${RBFF_NOTES_ROOT:-$HOME/Documents/Notes}"
@@ -14,6 +19,11 @@ RBFF_GAMBIT_CLI="${RBFF_GAMBIT_CLI:-}"
 ensure_local_bin() {
   mkdir -p "$HOME/.local/bin"
   export PATH="$HOME/.local/bin:$PATH"
+}
+
+ensure_deno_global_bin() {
+  mkdir -p "$HOME/.deno/bin"
+  export PATH="$HOME/.deno/bin:$PATH"
 }
 
 brew_path() {
@@ -59,7 +69,7 @@ open_codex_notes() {
     return 1
   fi
   if ! command -v codex >/dev/null 2>&1; then
-    echo "rbff: codex not found; run 'rbff rebuild' to install it" >&2
+    echo "rbff: codex not found; run 'rbff rebuild' to install the Deno global codex shim" >&2
     return 1
   fi
   (cd "$RBFF_NOTES_ROOT" && codex)
@@ -72,7 +82,7 @@ open_codex_repo() {
     return 1
   fi
   if ! command -v codex >/dev/null 2>&1; then
-    echo "rbff: codex not found; run 'rbff rebuild' to install it" >&2
+    echo "rbff: codex not found; run 'rbff rebuild' to install the Deno global codex shim" >&2
     return 1
   fi
   (cd "$RBFF_REPO_DEFAULT" && codex)
@@ -261,13 +271,24 @@ maybe_migrate() {
 ensure_repo() {
   if [[ ! -d "$RBFF_REPO_DEFAULT" ]]; then
     mkdir -p "$(dirname "$RBFF_REPO_DEFAULT")"
-    if command -v sl >/dev/null 2>&1; then
-      sl clone "$RBFF_REMOTE_DEFAULT" "$RBFF_REPO_DEFAULT"
-    else
-      nix --extra-experimental-features "nix-command flakes" \
-        shell nixpkgs#sapling -c sl clone "$RBFF_REMOTE_DEFAULT" "$RBFF_REPO_DEFAULT"
-    fi
+    nix --extra-experimental-features "nix-command flakes" \
+      shell nixpkgs#sapling nixpkgs#git -c sl clone "$RBFF_REMOTE_DEFAULT" "$RBFF_REPO_DEFAULT"
   fi
+}
+
+ensure_bfmono_repo() {
+  if [[ -d "$RBFF_BFMONO_PATH/.git" ]] || [[ -d "$RBFF_BFMONO_PATH/.sl" ]]; then
+    return 0
+  fi
+
+  if [[ -e "$RBFF_BFMONO_PATH" ]]; then
+    echo "rbff: bfmono path exists but is not a checkout: $RBFF_BFMONO_PATH" >&2
+    return 1
+  fi
+
+  mkdir -p "$(dirname "$RBFF_BFMONO_PATH")"
+  nix --extra-experimental-features "nix-command flakes" \
+    shell nixpkgs#sapling nixpkgs#git -c sl clone "$RBFF_BFMONO_REMOTE_DEFAULT" "$RBFF_BFMONO_PATH"
 }
 
 install_rbff_cli() {
@@ -289,8 +310,88 @@ ensure_brew() {
   fi
 }
 
+managed_git() {
+  nix --extra-experimental-features "nix-command flakes" \
+    shell nixpkgs#git -c "$@"
+}
+
+managed_sl() {
+  nix --extra-experimental-features "nix-command flakes" \
+    shell nixpkgs#sapling nixpkgs#git -c "$@"
+}
+
+git_config_get() {
+  managed_git sh -lc "git config --global --get '$1' 2>/dev/null || true"
+}
+
+prompt_if_missing() {
+  local current="$1"
+  local prompt="$2"
+  if [[ -n "$current" ]]; then
+    echo "$current"
+    return 0
+  fi
+  if [[ ! -t 0 ]]; then
+    return 0
+  fi
+  local reply=""
+  read -r -p "$prompt" reply
+  echo "$reply"
+}
+
+gh_user_field() {
+  local field="$1"
+  if ! command -v gh >/dev/null 2>&1; then
+    return 0
+  fi
+  gh api user --jq ".${field} // \"\"" 2>/dev/null || true
+}
+
+ensure_commit_identity() {
+  local git_name git_email gh_name sl_username
+
+  sl_username="$(managed_sl sh -lc 'sl config ui.username 2>/dev/null || true')"
+  if [[ -n "$sl_username" ]]; then
+    return 0
+  fi
+
+  git_name="${RBFF_GIT_USER_NAME:-$(git_config_get user.name)}"
+  git_email="${RBFF_GIT_USER_EMAIL:-$(git_config_get user.email)}"
+
+  if [[ -z "$git_name" ]]; then
+    gh_name="$(gh_user_field name)"
+    if [[ -n "$gh_name" ]]; then
+      git_name="$gh_name"
+    else
+      git_name="$(gh_user_field login)"
+    fi
+  fi
+
+  git_name="$(prompt_if_missing "$git_name" 'rbff: git user name: ')"
+  git_email="$(prompt_if_missing "$git_email" 'rbff: git user email: ')"
+
+  if [[ -z "$git_name" ]] || [[ -z "$git_email" ]]; then
+    echo "rbff: commit identity is missing; set RBFF_GIT_USER_NAME and RBFF_GIT_USER_EMAIL or configure git globally" >&2
+    return 1
+  fi
+
+  managed_git git config --global user.name "$git_name"
+  managed_git git config --global user.email "$git_email"
+  managed_sl sl config --user ui.username "$git_name <$git_email>"
+}
+
+ensure_codex() {
+  ensure_deno_global_bin
+  if ! command -v deno >/dev/null 2>&1; then
+    echo "rbff: deno not found; run 'rbff rebuild' after nix-darwin installs it" >&2
+    return 1
+  fi
+  deno install -g -A --name codex npm:@openai/codex
+}
+
 run_darwin_switch() {
-  local flake_ref="${RBFF_REPO_DEFAULT}#rbff"
+  local config_name="${1:-rbff}"
+  local flake_ref="${RBFF_REPO_DEFAULT}#${config_name}"
   local sudo_cmd=""
   if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
     sudo_cmd="sudo"
@@ -306,10 +407,14 @@ run_darwin_switch() {
 cmd="${1:-}"
 shift || true
 dry_run="false"
+skip_homebrew="false"
 for arg in "$@"; do
   case "$arg" in
     --dry-run)
       dry_run="true"
+      ;;
+    --skip-homebrew)
+      skip_homebrew="true"
       ;;
   esac
 done
@@ -325,15 +430,24 @@ case "$cmd" in
       else
         echo "- nix: missing (would install)"
       fi
-      if brew_bin="$(brew_path)"; then
-        echo "- brew: present at $brew_bin"
+      if [[ "$skip_homebrew" == "true" ]]; then
+        echo "- brew: skipped"
       else
-        echo "- brew: missing (would install)"
+        if brew_bin="$(brew_path)"; then
+          echo "- brew: present at $brew_bin"
+        else
+          echo "- brew: missing (would install)"
+        fi
       fi
       if [[ -d "$RBFF_REPO_DEFAULT" ]]; then
         echo "- repo: present at $RBFF_REPO_DEFAULT"
       else
         echo "- repo: missing (would clone to $RBFF_REPO_DEFAULT)"
+      fi
+      if [[ -d "$RBFF_BFMONO_PATH/.git" ]] || [[ -d "$RBFF_BFMONO_PATH/.sl" ]]; then
+        echo "- bfmono: present at $RBFF_BFMONO_PATH"
+      else
+        echo "- bfmono: missing (would clone to $RBFF_BFMONO_PATH)"
       fi
       if [[ -f "$RBFF_BIN_TARGET" ]]; then
         echo "- rbff: present at $RBFF_BIN_TARGET"
@@ -352,15 +466,34 @@ case "$cmd" in
           echo "- nix-darwin: not detected"
           ;;
       esac
-      echo "- would run: darwin-rebuild switch --flake $RBFF_REPO_DEFAULT#rbff --impure"
+      if [[ -n "$RBFF_GIT_USER_NAME" ]] && [[ -n "$RBFF_GIT_USER_EMAIL" ]]; then
+        echo "- git identity: would configure $RBFF_GIT_USER_NAME <$RBFF_GIT_USER_EMAIL>"
+      else
+        echo "- git identity: would configure if missing"
+      fi
+      if [[ "$skip_homebrew" == "true" ]]; then
+        echo "- would run: darwin-rebuild switch --flake $RBFF_REPO_DEFAULT#rbff-no-homebrew --impure"
+      else
+        echo "- would run: darwin-rebuild switch --flake $RBFF_REPO_DEFAULT#rbff --impure"
+      fi
+      echo "- would run: deno install -g -A --name codex npm:@openai/codex"
       exit 0
     fi
     ensure_nix
-    ensure_brew
+    if [[ "$skip_homebrew" != "true" ]]; then
+      ensure_brew
+    fi
     ensure_repo
+    ensure_bfmono_repo
     install_rbff_cli
     maybe_migrate
-    run_darwin_switch
+    if [[ "$skip_homebrew" == "true" ]]; then
+      run_darwin_switch rbff-no-homebrew
+    else
+      run_darwin_switch rbff
+    fi
+    ensure_commit_identity
+    ensure_codex
     ;;
   rebuild)
     if [[ "$dry_run" == "true" ]]; then
@@ -370,15 +503,24 @@ case "$cmd" in
       else
         echo "- repo: missing (would fail without doctor)"
       fi
+      if [[ -d "$RBFF_BFMONO_PATH/.git" ]] || [[ -d "$RBFF_BFMONO_PATH/.sl" ]]; then
+        echo "- bfmono: present at $RBFF_BFMONO_PATH"
+      else
+        echo "- bfmono: missing (doctor would clone it)"
+      fi
       if command -v nix >/dev/null 2>&1; then
         echo "- nix: present"
       else
         echo "- nix: missing (would fail without doctor)"
       fi
-      if brew_bin="$(brew_path)"; then
-        echo "- brew: present at $brew_bin"
+      if [[ "$skip_homebrew" == "true" ]]; then
+        echo "- brew: skipped"
       else
-        echo "- brew: missing (would fail without doctor)"
+        if brew_bin="$(brew_path)"; then
+          echo "- brew: present at $brew_bin"
+        else
+          echo "- brew: missing (would fail without doctor)"
+        fi
       fi
       case "$(detect_nix_darwin)" in
         active:rbff)
@@ -391,14 +533,24 @@ case "$cmd" in
           echo "- nix-darwin: not detected"
           ;;
       esac
-      echo "- would run: darwin-rebuild switch --flake $RBFF_REPO_DEFAULT#rbff --impure"
+      if [[ "$skip_homebrew" == "true" ]]; then
+        echo "- would run: darwin-rebuild switch --flake $RBFF_REPO_DEFAULT#rbff-no-homebrew --impure"
+      else
+        echo "- would run: darwin-rebuild switch --flake $RBFF_REPO_DEFAULT#rbff --impure"
+      fi
+      echo "- would run: deno install -g -A --name codex npm:@openai/codex"
       exit 0
     fi
     if [[ "$(status_check_prereqs)" != "0" ]]; then
       echo "rbff: missing prerequisites; run rbff status or rbff doctor" >&2
       exit 1
     fi
-    run_darwin_switch
+    if [[ "$skip_homebrew" == "true" ]]; then
+      run_darwin_switch rbff-no-homebrew
+    else
+      run_darwin_switch rbff
+    fi
+    ensure_codex
     ;;
   status)
     echo "rbff status:"
@@ -416,6 +568,11 @@ case "$cmd" in
       echo "- repo: present at $RBFF_REPO_DEFAULT"
     else
       echo "- repo: missing"
+    fi
+    if [[ -d "$RBFF_BFMONO_PATH/.git" ]] || [[ -d "$RBFF_BFMONO_PATH/.sl" ]]; then
+      echo "- bfmono: present at $RBFF_BFMONO_PATH"
+    else
+      echo "- bfmono: missing"
     fi
     if [[ -f "$RBFF_BIN_TARGET" ]]; then
       echo "- rbff: present at $RBFF_BIN_TARGET"

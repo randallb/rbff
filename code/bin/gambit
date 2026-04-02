@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# rbff wrapper: delegates to a sibling bfmono checkout.
+#
+# Resolve symlinks so this works when installed via ~/.local/bin.
+SOURCE_PATH="${BASH_SOURCE[0]}"
+if command -v perl >/dev/null 2>&1; then
+  SOURCE_PATH="$(perl -MCwd=abs_path -e 'print abs_path($ARGV[0])' "$SOURCE_PATH")"
+fi
+
+SCRIPT_DIR="$(cd "$(dirname "$SOURCE_PATH")" && pwd)"
+RBFF_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+BFMONO_DEFAULT="$RBFF_ROOT/../bolt-foundry/bfmono"
+BFMONO_ROOT="${RBFF_BFMONO_PATH:-$BFMONO_DEFAULT}"
+BFMONO_ROOT="$(cd "$BFMONO_ROOT" 2>/dev/null && pwd || true)"
+
+GAMBIT_WRAPPER="$BFMONO_ROOT/infra/bin/gambit"
+
+if [[ -z "$BFMONO_ROOT" ]] || [[ ! -x "$GAMBIT_WRAPPER" ]]; then
+  echo "rbff: gambit wrapper not found/executable: $GAMBIT_WRAPPER" >&2
+  echo "rbff: set RBFF_BFMONO_PATH to your bfmono path (expected $BFMONO_DEFAULT)" >&2
+  exit 1
+fi
+
+exec "$GAMBIT_WRAPPER" "$@"

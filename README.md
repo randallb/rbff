@@ -14,6 +14,15 @@ From the repo root:
 This installs Nix (via Determinate Systems) and Homebrew if missing, then
 applies the nix-darwin flake.
 
+For a fresh Mac, you can bootstrap directly with:
+
+```bash
+curl -fsSL https://gist.githubusercontent.com/randallb/21d20b50a353386f72fc765c52c9fb50/raw/bd545979c294fbd9e07ef8b7f470b1fbb9782002/bootstrap-new-mac.sh | bash
+```
+
+If Xcode Command Line Tools are not installed yet, macOS will prompt for that
+first. After that install finishes, run the same command again.
+
 Notes:
 - The flake picks the current Mac architecture automatically (`aarch64-darwin` or `x86_64-darwin`).
 - `--impure` is required (the flake reads `$USER` / `$SUDO_USER` to pick the primary user).

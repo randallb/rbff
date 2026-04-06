@@ -12,8 +12,8 @@ Defaults are set via env vars in `bin/rbff`:
 
 `rbff doctor` clones the repo if needed, links the CLI into
 `RBFF_BIN_TARGET`, clones `bfmono` if needed, applies nix-darwin, and installs
-the global Deno `codex` shim. It also configures Git/Sapling commit identity if
-missing.
+the global Deno `codex` shim. It also prompts for `gh` login if needed and
+configures Git/Sapling commit identity if missing.
 
 ## Commands
 

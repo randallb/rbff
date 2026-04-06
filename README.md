@@ -13,7 +13,7 @@ From the repo root:
 
 This installs Nix (via Determinate Systems) and Homebrew if missing, then
 clones the sibling `bfmono` checkout if missing, applies the nix-darwin flake,
-and installs the global Deno `codex` shim.
+prompts for `gh` login if needed, and installs the global Deno `codex` shim.
 
 Use `rbff doctor` for the full machine bootstrap path. Use `rbff rebuild` for
 the fast path; it skips Homebrew/MAS activation by default.

@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 RBFF_FLAKE_REF="${RBFF_FLAKE_REF:-$REPO_ROOT#rbff}"
+RBFF_BIN_TARGET="${RBFF_BIN_TARGET:-$HOME/.local/bin/rbff}"
 
 brew_path() {
   local brew_bin
@@ -47,6 +48,32 @@ run_darwin_switch() {
   fi
 }
 
+ensure_gh_auth() {
+  if ! command -v gh >/dev/null 2>&1; then
+    echo "rbff: gh not found; skipping GitHub auth" >&2
+    return 0
+  fi
+
+  if gh auth status >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if [[ ! -t 0 ]]; then
+    echo "rbff: gh is not authenticated; skipping login in non-interactive mode" >&2
+    return 0
+  fi
+
+  echo "rbff: gh is not authenticated; starting GitHub login"
+  gh auth login
+}
+
+install_rbff_cli() {
+  mkdir -p "$(dirname "$RBFF_BIN_TARGET")"
+  ln -sf "$REPO_ROOT/bin/rbff" "$RBFF_BIN_TARGET"
+}
+
 ensure_nix
 ensure_brew
 run_darwin_switch
+ensure_gh_auth
+install_rbff_cli

@@ -399,6 +399,25 @@ ensure_commit_identity() {
   managed_sl sl config --user ui.username "$git_name <$git_email>"
 }
 
+ensure_gh_auth() {
+  if ! command -v gh >/dev/null 2>&1; then
+    echo "rbff: gh not found; skipping GitHub auth" >&2
+    return 0
+  fi
+
+  if gh auth status >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if [[ ! -t 0 ]]; then
+    echo "rbff: gh is not authenticated; skipping login in non-interactive mode" >&2
+    return 0
+  fi
+
+  echo "rbff: gh is not authenticated; starting GitHub login"
+  gh auth login
+}
+
 ensure_codex() {
   ensure_deno_global_bin
   if ! command -v deno >/dev/null 2>&1; then
@@ -512,6 +531,7 @@ case "$cmd" in
     if [[ "$skip_homebrew" != "true" ]]; then
       ensure_brew
     fi
+    ensure_gh_auth
     ensure_repo
     ensure_bfmono_repo
     install_rbff_cli

@@ -15,6 +15,7 @@ RBFF_NOTES_ROOT="${RBFF_NOTES_ROOT:-$HOME/Documents/Notes}"
 RBFF_GAMBIT_REPO_DECK="${RBFF_GAMBIT_REPO_DECK:-gambit.deck.md}"
 RBFF_GAMBIT_NOTES_DECK="${RBFF_GAMBIT_NOTES_DECK:-gambit.deck.md}"
 RBFF_GAMBIT_CLI="${RBFF_GAMBIT_CLI:-}"
+RBFF_GAMBIT_CLI_REF="${RBFF_GAMBIT_CLI_REF:-jsr:@bolt-foundry/gambit@0.5.2/cli}"
 
 ensure_local_bin() {
   mkdir -p "$HOME/.local/bin"
@@ -55,7 +56,7 @@ ensure_notes_root() {
 print_usage() {
   cat <<'USAGE'
 rbff doctor         - bootstrap + apply nix-darwin config
-rbff rebuild        - apply nix-darwin config
+rbff rebuild        - apply nix-darwin config (fast path, skips homebrew)
 rbff status         - show local setup status
 rbff codex          - open Codex in rbff repo
 rbff gambit         - open Gambit in rbff repo
@@ -72,7 +73,7 @@ open_codex_notes() {
     echo "rbff: codex not found; run 'rbff rebuild' to install the Deno global codex shim" >&2
     return 1
   fi
-  (cd "$RBFF_NOTES_ROOT" && codex)
+  (cd "$RBFF_NOTES_ROOT" && codex --yolo)
 }
 
 open_codex_repo() {
@@ -85,7 +86,7 @@ open_codex_repo() {
     echo "rbff: codex not found; run 'rbff rebuild' to install the Deno global codex shim" >&2
     return 1
   fi
-  (cd "$RBFF_REPO_DEFAULT" && codex)
+  (cd "$RBFF_REPO_DEFAULT" && codex --yolo)
 }
 
 resolve_deck_path() {
@@ -98,8 +99,19 @@ resolve_deck_path() {
   fi
 }
 
+resolve_rbff_root() {
+  local source_path="${BASH_SOURCE[0]}"
+  if command -v perl >/dev/null 2>&1; then
+    source_path="$(perl -MCwd=abs_path -e 'print abs_path($ARGV[0])' "$source_path")"
+  fi
+  local script_dir
+  script_dir="$(cd "$(dirname "$source_path")" && pwd)"
+  cd "$script_dir/.." && pwd
+}
+
 run_gambit_repl() {
   local deck_path="$1"
+  shift || true
   if [[ -n "$RBFF_GAMBIT_CLI" ]]; then
     local cli_path="$RBFF_GAMBIT_CLI"
     if [[ "$cli_path" == "~"* ]]; then
@@ -109,18 +121,25 @@ run_gambit_repl() {
       echo "rbff: deno not found; install deno to use RBFF_GAMBIT_CLI" >&2
       return 1
     fi
-    deno run -A "$cli_path" repl "$deck_path"
+    deno run -A "$cli_path" repl "$deck_path" "$@"
+    return $?
+  fi
+  local rbff_root
+  rbff_root="$(resolve_rbff_root)"
+  local local_gambit_wrapper="$rbff_root/code/bin/gambit"
+  if [[ -x "$local_gambit_wrapper" ]]; then
+    "$local_gambit_wrapper" repl "$deck_path" "$@"
     return $?
   fi
   if command -v gambit >/dev/null 2>&1; then
-    gambit repl "$deck_path"
+    gambit repl "$deck_path" "$@"
     return $?
   fi
   if ! command -v deno >/dev/null 2>&1; then
     echo "rbff: gambit not found; install gambit or deno to use this command" >&2
     return 1
   fi
-  deno run -A jsr:@bolt-foundry/gambit/cli repl "$deck_path"
+  deno run -A "$RBFF_GAMBIT_CLI_REF" repl "$deck_path" "$@"
 }
 
 open_gambit_notes() {
@@ -133,7 +152,7 @@ open_gambit_notes() {
     echo "rbff: gambit deck not found at $deck_path" >&2
     return 1
   fi
-  (cd "$RBFF_NOTES_ROOT" && run_gambit_repl "$deck_path")
+  (cd "$RBFF_NOTES_ROOT" && run_gambit_repl "$deck_path" "$@")
 }
 
 open_gambit_repo() {
@@ -148,7 +167,7 @@ open_gambit_repo() {
     echo "rbff: gambit deck not found at $deck_path" >&2
     return 1
   fi
-  (cd "$RBFF_REPO_DEFAULT" && run_gambit_repl "$deck_path")
+  (cd "$RBFF_REPO_DEFAULT" && run_gambit_repl "$deck_path" "$@")
 }
 
 init_notes() {
@@ -386,7 +405,7 @@ ensure_codex() {
     echo "rbff: deno not found; run 'rbff rebuild' after nix-darwin installs it" >&2
     return 1
   fi
-  deno install -g -A --name codex npm:@openai/codex
+  deno install -g -f -A --name codex npm:@openai/codex
 }
 
 run_darwin_switch() {
@@ -405,7 +424,9 @@ run_darwin_switch() {
 }
 
 cmd="${1:-}"
-shift || true
+if [[ $# -gt 0 ]]; then
+  shift
+fi
 dry_run="false"
 skip_homebrew="false"
 for arg in "$@"; do
@@ -416,8 +437,16 @@ for arg in "$@"; do
     --skip-homebrew)
       skip_homebrew="true"
       ;;
+    --skip-homebrew=false)
+      skip_homebrew="false"
+      ;;
   esac
 done
+
+if [[ "$cmd" == "rebuild" ]] && [[ "$skip_homebrew" == "false" ]]; then
+  skip_homebrew="true"
+fi
+
 case "$cmd" in
   "")
     print_usage
@@ -513,7 +542,7 @@ case "$cmd" in
       else
         echo "- nix: missing (would fail without doctor)"
       fi
-      if [[ "$skip_homebrew" == "true" ]]; then
+      if [[ "$skip_homebrew" != "false" ]]; then
         echo "- brew: skipped"
       else
         if brew_bin="$(brew_path)"; then
@@ -533,7 +562,7 @@ case "$cmd" in
           echo "- nix-darwin: not detected"
           ;;
       esac
-      if [[ "$skip_homebrew" == "true" ]]; then
+      if [[ "$skip_homebrew" != "false" ]]; then
         echo "- would run: darwin-rebuild switch --flake $RBFF_REPO_DEFAULT#rbff-no-homebrew --impure"
       else
         echo "- would run: darwin-rebuild switch --flake $RBFF_REPO_DEFAULT#rbff --impure"
@@ -545,7 +574,7 @@ case "$cmd" in
       echo "rbff: missing prerequisites; run rbff status or rbff doctor" >&2
       exit 1
     fi
-    if [[ "$skip_homebrew" == "true" ]]; then
+    if [[ "$skip_homebrew" != "false" ]]; then
       run_darwin_switch rbff-no-homebrew
     else
       run_darwin_switch rbff
@@ -599,11 +628,13 @@ case "$cmd" in
     open_codex_repo
     ;;
   gambit)
-    open_gambit_repo
+    open_gambit_repo "$@"
     ;;
   journal)
     subcmd="${1:-}"
-    shift || true
+    if [[ $# -gt 0 ]]; then
+      shift
+    fi
     case "$subcmd" in
       "" )
         open_gambit_notes

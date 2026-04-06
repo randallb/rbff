@@ -54,6 +54,7 @@
     ];
      masApps = {
       "1Password for Safari" = 1569813296;
+      "Amphetamine" = 937984704;
       "Amazon Kindle" = 302584613;
       "stoic" = 1312926037;
       "WhatsApp" = 310633997;
@@ -65,7 +66,7 @@
       "Roam: A Better Remote for Roku" = 6469834197;
       # "Remote Desktop" = 1295203466;
     #   "Screens 5" = 1663047912;
-      "Xcode" = 497799835;
+      # "Xcode" = 497799835;
       "Final Cut Pro" = 424389933;
       "Motion" = 434290957;
      };
@@ -116,6 +117,13 @@
       };
     };
   };
+
+  system.activationScripts.postActivation.text = lib.mkAfter (lib.optionalString pkgs.stdenv.hostPlatform.isAarch64 ''
+    if ! /usr/sbin/pkgutil --pkg-info com.apple.pkg.RosettaUpdateAuto >/dev/null 2>&1; then
+      echo "Installing Rosetta 2..."
+      /usr/sbin/softwareupdate --install-rosetta --agree-to-license
+    fi
+  '');
 
   home-manager.backupFileExtension = "hm-bak";
 

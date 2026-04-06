@@ -2,7 +2,7 @@
 label = "rbff_assistant"
 
 [modelParams]
-model = "openai/gpt-4o-mini"
+model = "codex-cli/default"
 temperature = 0.2
 +++
 

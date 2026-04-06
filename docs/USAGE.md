@@ -22,13 +22,16 @@ missing.
 - `rbff gambit`: opens Gambit in the rbff repo.
 - `rbff journal`: opens Gambit in notes root.
 - `rbff journal doctor`: creates PARA folders + a daily template.
-- `rbff doctor`: bootstraps prereqs and applies nix-darwin.
-- `rbff rebuild`: applies nix-darwin and refreshes the global Deno `codex`
-  shim.
+- `rbff doctor`: bootstraps prereqs and applies the full nix-darwin setup.
+- `rbff rebuild`: applies the fast nix-darwin path, skipping Homebrew/MAS
+  activation, and refreshes the global Deno `codex` shim.
 - `rbff status`: prints local setup status.
 
-Both `rbff doctor` and `rbff rebuild` support `--skip-homebrew`, which uses
-the `rbff-no-homebrew` flake target and skips Homebrew/MAS activation entirely.
+`rbff rebuild` now uses the `rbff-no-homebrew` flake target by default. Pass
+`--skip-homebrew=false` if you explicitly want the full Homebrew/MAS activation
+path during rebuild.
+`rbff doctor` remains the full setup path, and still accepts `--skip-homebrew`
+when you explicitly want to suppress Homebrew/MAS activation there too.
 
 ## Notes root
 
@@ -36,12 +39,31 @@ The notes root defaults to `~/Documents/Notes` and can be overridden with
 `RBFF_NOTES_ROOT`. The folder is not created automatically by `rbff journal`;
 use `rbff journal doctor` to create the structure.
 
+## Obsidian integration
+
+The legacy helper at `code/bin/rbff` now uses the official `obsidian` CLI
+instead of `obsidian://` URLs. That requires Obsidian's `Command line
+interface` setting to be enabled in the desktop app. File targets open directly
+with `obsidian vault=rbff open path=<path>`. Directory and repo-root targets
+open the vault, because the CLI `open` command only targets files.
+
 ## Gambit decks
 
 `rbff gambit` and `rbff journal` expect a deck file to exist. By default they
 look for `gambit.deck.md` in the repo and notes root. Override with
 `RBFF_GAMBIT_REPO_DECK` and `RBFF_GAMBIT_NOTES_DECK` (absolute paths allowed).
-If `gambit` isn't installed, `rbff` falls back to `deno run -A jsr:@bolt-foundry/gambit/cli`.
+`rbff gambit` prefers the local bfmono wrapper at
+`$RBFF_BFMONO_PATH/infra/bin/gambit` when present. If that is missing, it falls
+back to any installed `gambit` binary, then to
+`deno run -A jsr:@bolt-foundry/gambit@0.5.2/cli`. Override the final Deno
+fallback with `RBFF_GAMBIT_CLI_REF` or point `RBFF_GAMBIT_CLI` at a local CLI
+entrypoint if you need a different Gambit build.
+Extra args after `rbff gambit` are forwarded to `gambit repl <deck>`, so you
+can do things like `rbff gambit --message 'Reply with exactly: ok' --verbose`.
+
+The repo's default [gambit.deck.md](/Users/randallb/code/rbff/gambit.deck.md)
+uses Gambit's `codex-cli/default` provider, so `rbff gambit` runs through the
+Codex CLI provider path rather than the older OpenAI model config.
 
 ## Codex install
 

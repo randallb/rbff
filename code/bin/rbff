@@ -1,8 +1,6 @@
 #!/usr/bin/env -S deno run --allow-run --allow-read
 
-const decoder = new TextDecoder();
-
-function toPath(url) {
+function toPath(url: URL | string): string {
   const path = new URL(url).pathname;
   return decodeURIComponent(path);
 }
@@ -15,7 +13,7 @@ function usage() {
   console.log('rbff open [path]  - open repo or specific file/folder in Obsidian');
 }
 
-async function exists(path) {
+async function exists(path: string): Promise<boolean> {
   try {
     await Deno.stat(path);
     return true;
@@ -24,17 +22,26 @@ async function exists(path) {
   }
 }
 
-function encode(value) {
-  return encodeURIComponent(value);
+async function statPath(path: string): Promise<Deno.FileInfo | null> {
+  try {
+    return await Deno.stat(path);
+  } catch {
+    return null;
+  }
 }
 
-async function runOpen(args) {
-  const cmd = new Deno.Command('open', { args, stdin: 'null', stdout: 'null', stderr: 'null' });
+async function runObsidian(args: string[]): Promise<boolean> {
+  const cmd = new Deno.Command('obsidian', {
+    args,
+    stdin: 'inherit',
+    stdout: 'inherit',
+    stderr: 'inherit',
+  });
   const { success } = await cmd.spawn().status;
   return success;
 }
 
-async function openObsidian(target) {
+async function openObsidian(target?: string): Promise<void> {
   let fullPath = target ?? repoRoot;
   if (!fullPath.startsWith('/')) {
     fullPath = `${repoRoot}/${fullPath}`;
@@ -45,18 +52,28 @@ async function openObsidian(target) {
   }
 
   let rel = fullPath.startsWith(repoRoot) ? fullPath.slice(repoRoot.length + 1) : '';
-  const vaultParam = encode(vault);
+  rel = rel.replace(/^\/+/, '');
 
-  if (rel.length === 0) {
-    await runOpen([`obsidian://open?vault=${vaultParam}`]);
-  } else {
-    rel = rel.replace(/^\/+/, '');
-    const fileParam = encode(rel);
-    await runOpen([`obsidian://open?vault=${vaultParam}&file=${fileParam}`]);
+  const info = await statPath(fullPath);
+  if (!info) {
+    console.error(`rbff: unable to stat path: ${fullPath}`);
+    Deno.exit(1);
   }
 
-  // Fallback: open the vault root in Obsidian if URL open fails.
-  await runOpen(['-a', 'Obsidian', repoRoot]);
+  let success = false;
+  if (rel.length === 0 || info.isDirectory) {
+    // The CLI `open` command targets files, so opening the vault is the closest
+    // match for the repo root or a directory target.
+    success = await runObsidian([`vault=${vault}`]);
+  } else {
+    success = await runObsidian([`vault=${vault}`, 'open', `path=${rel}`]);
+  }
+
+  if (!success) {
+    console.error('rbff: failed to open Obsidian via the official CLI');
+    console.error('rbff: make sure Obsidian CLI is enabled in Settings > General');
+    Deno.exit(1);
+  }
 }
 
 const [cmd, ...rest] = Deno.args;

@@ -62,6 +62,7 @@
       "Magnet" = 441258766;
       "OpenIn 4 - Advanced Link Handler" = 1643649331;
       "Pixelmator Pro" = 1289583905;
+      "Roam: A Better Remote for Roku" = 6469834197;
       # "Remote Desktop" = 1295203466;
     #   "Screens 5" = 1663047912;
       "Xcode" = 497799835;
@@ -87,6 +88,12 @@
   system.defaults.finder = {
     FXPreferredViewStyle = "Nlsv";
     ShowStatusBar = true;
+  };
+
+  system.defaults.NSGlobalDomain = {
+    NSAutomaticCapitalizationEnabled = false;
+    NSAutomaticQuoteSubstitutionEnabled = false;
+    NSAutomaticSpellingCorrectionEnabled = false;
   };
 
   system.defaults.CustomUserPreferences = {

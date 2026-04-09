@@ -76,6 +76,21 @@ deno install -g -A --name codex npm:@openai/codex
 The installed shim lives under `~/.deno/bin/codex`. `home-manager` adds
 `$HOME/.deno/bin` to `PATH`.
 
+## 1Password CLI
+
+`op` is installed via Homebrew cask (`1password-cli`) as part of the nix-darwin
+setup.
+
+To use desktop-app sign-in, enable `Settings > Developer > Integrate with
+1Password CLI` in the 1Password app, then run:
+
+```bash
+op signin
+```
+
+If you want SSH keys managed by 1Password as well, enable `Settings >
+Developer > Set Up SSH Agent` in the 1Password app.
+
 ## Environment variables
 
 - `RBFF_REPO_DEFAULT`: repo path used by `rbff doctor` and `rbff codex`

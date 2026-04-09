@@ -14,6 +14,7 @@
     user = config.system.primaryUser;
     casks = [
       "1password"
+      "1password-cli"
       "aqua-voice"
       "ableton-live-suite"
       "audio-hijack"
@@ -30,6 +31,7 @@
       "google-chrome"
       "google-drive"
       "granola"
+      "insta360-link-controller"
       "iterm2"
       "linear-linear"
       "loopback"
@@ -59,6 +61,7 @@
       "stoic" = 1312926037;
       "WhatsApp" = 310633997;
       "Hush" = 1544743900;
+      "Hidden Bar" = 1452453066;
       "Inset - Preview Any Screen Area" = 6759235673;
       "Magnet" = 441258766;
       "OpenIn 4 - Advanced Link Handler" = 1643649331;
@@ -78,6 +81,9 @@
     in
       if sudoUser != "" then sudoUser else builtins.getEnv "USER";
   users.users.root.home = lib.mkForce "/var/root";
+  users.users.${config.system.primaryUser}.openssh.authorizedKeys.keys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHooPT7p3a4vhV+hVLWlHUcY/OjoKcLDFOoI7I29GrXo"
+  ];
 
   environment.systemPackages = with pkgs; [
     sapling
@@ -86,15 +92,66 @@
     gh
   ];
 
+  environment.extraInit = ''
+    if [ "$TERM" = "xterm-ghostty" ]; then
+      ghostty_terminfo="/Applications/Ghostty.app/Contents/Resources/terminfo"
+      if [ -d "$ghostty_terminfo" ]; then
+        export TERMINFO_DIRS="$ghostty_terminfo:''${TERMINFO_DIRS:-}"
+      else
+        export TERM="xterm-256color"
+      fi
+    fi
+  '';
+
   system.defaults.finder = {
     FXPreferredViewStyle = "Nlsv";
     ShowStatusBar = true;
+  };
+
+  services.openssh = {
+    enable = true;
+    extraConfig = ''
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      PermitRootLogin no
+    '';
+  };
+
+  system.defaults.dock = {
+    autohide = true;
+    show-recents = false;
+    persistent-apps = [
+      { app = "/System/Applications/Apps.app"; }
+      { app = "/Applications/Ghostty.app"; }
+      { app = "/Applications/Google Chrome.app"; }
+      { app = "/Applications/Slack.app"; }
+      { app = "/Applications/Notion Calendar.app"; }
+      { app = "/Applications/Obsidian.app"; }
+      { app = "/Applications/Visual Studio Code.app"; }
+      { app = "/Applications/ChatGPT.app"; }
+      { app = "/Applications/Claude.app"; }
+      { app = "/System/Applications/Music.app"; }
+      { app = "/Applications/Raycast.app"; }
+    ];
+    persistent-others = [
+      {
+        folder = {
+          path = "/Users/${config.system.primaryUser}/Downloads";
+          displayas = "folder";
+          showas = "list";
+        };
+      }
+    ];
   };
 
   system.defaults.NSGlobalDomain = {
     NSAutomaticCapitalizationEnabled = false;
     NSAutomaticQuoteSubstitutionEnabled = false;
     NSAutomaticSpellingCorrectionEnabled = false;
+  };
+
+  system.defaults.menuExtraClock = {
+    IsAnalog = true;
   };
 
   system.defaults.CustomUserPreferences = {

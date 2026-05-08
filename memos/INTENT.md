@@ -11,6 +11,8 @@
 - Work and creativity serve the Spirit rather than displace it.
 - Health and habits support clarity, presence, and stamina.
 - Life feels coherent, peaceful, and steady.
+- Durable context is captured outside my head so commitments, relationships,
+  dates, plans, and decisions are easier to steward.
 
 ## Constraints
 
@@ -18,6 +20,7 @@
 - Do not prioritize productivity over spiritual alignment.
 - Avoid commitments that consistently pull me away from presence.
 - Keep systems simple enough to sustain in both calm and chaos.
+- Do not let the task system become the memory system.
 
 ## Tradeoffs
 
@@ -43,6 +46,15 @@
 - Monthly review of commitments, habits, and drift.
 - Quarterly intent revalidation and adjustment.
 
+## Operating Memory
+
+- `memos/` holds durable intent, facts, plans, decisions, and history.
+- Things holds ephemeral next actions, Today commitments, reminders, and
+  Someday options.
+- Calendar holds hard time commitments.
+- Mail is the preferred catch-up surface across inboxes.
+- Linear holds canonical Workloop engineering issues.
+
 ## Activation / revalidation
 
 - Active immediately upon adoption.
@@ -53,5 +65,5 @@
 
 ### Inputs
 
-- `policy/product-command.md`
-- `policy/documentation-organization.md`
+- `memos/vault/policy/product-command.md`
+- `memos/vault/policy/documentation-organization.md`

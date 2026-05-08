@@ -65,10 +65,8 @@ switch. `home-manager` adds `~/.deno/bin` to `PATH`.
 
 ## Structure
 
-- `policy/` — doctrine
-- `memos/` — execution intent
-- `docs/` — public writing
+- `memos/` — durable operating memory, intent, relationships, policies, and vault
 - `studio/` — private work
 - `coworkers/` — agents/config
-- `people/` — relationships/contacts
 - `code/` — infra and scripts
+- `code/USAGE.md` — CLI behavior, defaults, and environment variables

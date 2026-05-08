@@ -1,6 +1,7 @@
 .obsidian/workspace.json
 .direnv/
 .env
+tmp/
 
 # macOS
 .DS_Store

@@ -9,6 +9,7 @@ depend on memory.
 ## Current durable context
 
 - Make regular focused time for Phoebe so she knows she is important.
+- Phoebe likes making food; cooking projects can be good focused time together.
 - Help Eli with his Roblox game and development setup.
 - Establish a better household cadence with Traci around laundry, dishes, and
   shared load.

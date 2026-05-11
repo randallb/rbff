@@ -12,6 +12,8 @@ maintenance notes, repair history, measurements, vendors, and household systems.
 - Kitchen island needs trim.
 - Front door stopper/hammer orientation needs fixing.
 - Some tools rusted and need recovery or replacement.
+- Poirot-inspired afternoon tea reconstruction lives in
+  [`notes/2026-05-08-poirot-western-star-tea-spread.md`](./notes/2026-05-08-poirot-western-star-tea-spread.md).
 
 ## Things
 

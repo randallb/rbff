@@ -64,6 +64,7 @@
       "WhatsApp" = 310633997;
       "Hush" = 1544743900;
       "Hidden Bar" = 1452453066;
+      "Harvest" = 506189836;
       "Inset - Preview Any Screen Area" = 6759235673;
       "Magnet" = 441258766;
       "OpenIn 4 - Advanced Link Handler" = 1643649331;
